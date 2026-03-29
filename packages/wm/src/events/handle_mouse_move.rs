@@ -66,11 +66,9 @@ pub fn handle_mouse_move(
   {
     // Ignore event if left/right-click is down. Otherwise, this causes
     // focus to jitter when a window is being resized by its drag
-    // handles. Also ignore if the OS focused window isn't the same as
-    // the WM's focused window.
+    // handles.
     if pressed_buttons.contains(&MouseButton::Left)
       || pressed_buttons.contains(&MouseButton::Right)
-      || !state.is_focus_synced
       || !config.value.general.focus_follows_cursor
     {
       return Ok(());
