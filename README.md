@@ -1,12 +1,12 @@
 <div align="center">
 
-> V3 is finally out - check out the changelog [here](https://github.com/glzr-io/GlazeWM/releases) 🔥
+> V3 is finally out - check out the changelog [here](https://github.com/OWNER/vypr/releases) 🔥
 
   <br>
-  <img src="./resources/assets/logo.svg" width="230" alt="GlazeWM logo" />
+  <img src="./resources/assets/logo.svg" width="230" alt="Vypr logo" />
   <br>
 
-# GlazeWM
+# Vypr
 
 **A tiling window manager for Windows inspired by i3wm.**
 
@@ -14,13 +14,13 @@
 [![Downloads][downloads-badge]][downloads-link]
 [![Good first issues][issues-badge]][issues-link]
 
-GlazeWM lets you easily organize windows and adjust their layout on the fly by using keyboard-driven commands.
+Vypr lets you easily organize windows and adjust their layout on the fly by using keyboard-driven commands.
 
 [Installation](#installation) •
 [Default keybindings](#default-keybindings) •
 [Config documentation](#config-documentation) •
 [FAQ](#faq) •
-[Contributing ↗](https://github.com/glzr-io/glazewm/blob/main/CONTRIBUTING.md)
+[Contributing ↗](https://github.com/OWNER/vypr/blob/main/CONTRIBUTING.md)
 
 ![Demo video][demo-video]
 
@@ -36,38 +36,38 @@ GlazeWM lets you easily organize windows and adjust their layout on the fly by u
 
 ## Installation
 
-**The latest version of GlazeWM is downloadable via [releases](https://github.com/glzr-io/GlazeWM/releases).** Zebar can optionally be installed as well via a checkbox during installation.
+**The latest version of Vypr is downloadable via [releases](https://github.com/OWNER/vypr/releases).** Zebar can optionally be installed as well via a checkbox during installation.
 
-GlazeWM is also available through several package managers:
+Vypr is also available through several package managers:
 
 **Winget**
 
 ```sh
-winget install GlazeWM
+winget install Vypr
 ```
 
 **Chocolatey**
 
 ```sh
-choco install glazewm
+choco install vypr
 ```
 
 **Scoop**
 
 ```sh
 scoop bucket add extras
-scoop install extras/glazewm
+scoop install extras/vypr
 ```
 
 ## Contributing
 
 Help fix something that annoys you, or add a feature you've been wanting for a long time! Contributions are very welcome.
 
-Local development and guidelines are available in the [contributing guide](https://github.com/glzr-io/glazewm/blob/main/CONTRIBUTING.md).
+Local development and guidelines are available in the [contributing guide](https://github.com/OWNER/vypr/blob/main/CONTRIBUTING.md).
 
 ## Default keybindings
 
-On the first launch of GlazeWM, a default configuration can optionally be generated.
+On the first launch of Vypr, a default configuration can optionally be generated.
 
 Below is a cheat sheet of all available commands and their default keybindings.
 
@@ -75,21 +75,21 @@ Below is a cheat sheet of all available commands and their default keybindings.
 
 ## Config documentation
 
-The [default config](https://github.com/glzr-io/glazewm/blob/main/resources/assets/sample-config.yaml) file is generated at `%userprofile%\.glzr\glazewm\config.yaml`.
+The [default config](https://github.com/OWNER/vypr/blob/main/resources/assets/sample-config.yaml) file is generated at `%userprofile%\.vypr\config.yaml`.
 
-To use a different config file location, you can launch the GlazeWM executable with the CLI argument `--config="..."`, like so:
-
-```sh
-./glazewm.exe start --config="C:\<PATH_TO_CONFIG>\config.yaml"
-```
-
-Or pass a value for the `GLAZEWM_CONFIG_PATH` environment variable:
+To use a different config file location, you can launch the Vypr executable with the CLI argument `--config="..."`, like so:
 
 ```sh
-setx GLAZEWM_CONFIG_PATH "C:\<PATH_TO_CONFIG>\config.yaml"
+vypr.exe start --config="C:\<PATH_TO_CONFIG>\config.yaml"
 ```
 
-With the benefit of using a custom path being that you can choose a different name for the config file, such as `glazewm.yaml`.
+Or pass a value for the `VYPR_CONFIG_PATH` environment variable:
+
+```sh
+setx VYPR_CONFIG_PATH "C:\<PATH_TO_CONFIG>\config.yaml"
+```
+
+With the benefit of using a custom path being that you can choose a different name for the config file, such as `config.yaml`.
 
 ### Config: General
 
@@ -332,7 +332,7 @@ window_behavior:
 
 ### Config: Binding modes
 
-Binding modes are used to modify keybindings while GlazeWM is running.
+Binding modes are used to modify keybindings while Vypr is running.
 
 A binding mode can be enabled with `wm-enable-binding-mode --name <NAME>` and disabled with `wm-disable-binding-mode --name <NAME>`.
 
@@ -356,15 +356,15 @@ binding_modes:
 
 ## FAQ
 
-**Q: How do I run GlazeWM on startup?**
+**Q: How do I run Vypr on startup?**
 
-Right-click the GlazeWM icon in the system tray and select "Run on system startup".
+Right-click the Vypr icon in the system tray and select "Run on system startup".
 
 **Q: How can I create `<insert layout>`?**
 
 You can create custom layouts by changing the tiling direction with `alt+v`. This changes where the next window is placed _in relation to the current window_. If the current window's direction is horizontal, the new window will be placed to the right of it. If it is vertical, it will be placed below it. This also applies when moving windows; the tiling direction of the stationary window will affect where the moved window will be placed.
 
-Community-made scripts like [Dutch-Raptor/GAT-GWM](https://github.com/Dutch-Raptor/GAT-GWM) and [burgr033/GlazeWM-autotiling-python](https://github.com/burgr033/GlazeWM-autotiling-python) can be used to automatically change the tiling direction. Native support for automatic layouts isn't _currently_ supported.
+Community-made scripts like [Dutch-Raptor/GAT-GWM](https://github.com/Dutch-Raptor/GAT-GWM) and [burgr033/Vypr-autotiling-python](https://github.com/burgr033/Vypr-autotiling-python) can be used to automatically change the tiling direction. Native support for automatic layouts isn't _currently_ supported.
 
 **Q: How do I create a rule for `<insert application>`?**
 
@@ -380,14 +380,14 @@ window_rules:
 
 Programs like Winlister or AutoHotkey's Window Spy can be useful for getting info about a window.
 
-**Q: How can I ignore GlazeWM's keybindings when `<insert application>` is focused?**
+**Q: How can I ignore Vypr's keybindings when `<insert application>` is focused?**
 
 This isn't currently supported, however, the keybinding `alt+shift+p` in the default config is used to disable all other keybindings until `alt+shift+p` is pressed again.
 
 [discord-badge]: https://img.shields.io/discord/1041662798196908052.svg?logo=discord&colorB=7289DA
 [discord-link]: https://discord.gg/ud6z3qjRvM
-[downloads-badge]: https://img.shields.io/github/downloads/glzr-io/glazewm/total?logo=github&logoColor=white
-[downloads-link]: https://github.com/glzr-io/glazewm/releases
+[downloads-badge]: https://img.shields.io/github/downloads/OWNER/vypr/total?logo=github&logoColor=white
+[downloads-link]: https://github.com/OWNER/vypr/releases
 [issues-badge]: https://img.shields.io/badge/good_first_issues-7057ff
-[issues-link]: https://github.com/orgs/glzr-io/projects/4/views/1?sliceBy%5Bvalue%5D=good+first+issue
+[issues-link]: https://github.com/OWNER/vypr/issues
 [demo-video]: resources/assets/demo.webp

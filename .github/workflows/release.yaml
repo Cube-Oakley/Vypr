@@ -37,10 +37,10 @@ jobs:
           # Add a `v` prefix to the version number.
           VERSION: v${{ inputs.version_number }}
         run: |
-          mv installer-universal.exe "glazewm-$VERSION.exe"
-          mv installer-arm64.msi "standalone-glazewm-$VERSION-arm64.msi"
-          mv installer-x64.msi "standalone-glazewm-$VERSION-x64.msi"
-          mv installer-universal.dmg "glazewm-$VERSION.dmg"
+          mv installer-universal.exe "vypr-$VERSION.exe"
+          mv installer-arm64.msi "standalone-vypr-$VERSION-arm64.msi"
+          mv installer-x64.msi "standalone-vypr-$VERSION-x64.msi"
+          mv installer-universal.dmg "vypr-$VERSION.dmg"
 
       - name: Create draft release
         env:
@@ -52,7 +52,7 @@ jobs:
             --title "$VERSION" \
             --generate-notes \
             --draft \
-            "./glazewm-$VERSION.exe#$VERSION for Windows (standard)" \
-            "./standalone-glazewm-$VERSION-arm64.msi#$VERSION for Windows (standalone, arm64)" \
-            "./standalone-glazewm-$VERSION-x64.msi#$VERSION for Windows (standalone, x64)" \
-            "./glazewm-$VERSION.dmg#$VERSION for macOS"
+            "./vypr-$VERSION.exe#$VERSION for Windows (standard)" \
+            "./standalone-vypr-$VERSION-arm64.msi#$VERSION for Windows (standalone, arm64)" \
+            "./standalone-vypr-$VERSION-x64.msi#$VERSION for Windows (standalone, x64)" \
+            "./vypr-$VERSION.dmg#$VERSION for macOS"

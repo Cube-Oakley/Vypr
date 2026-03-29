@@ -3,13 +3,13 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleName</key>
-    <string>GlazeWM</string>
+    <string>Vypr</string>
 
     <key>CFBundleDisplayName</key>
-    <string>GlazeWM</string>
+    <string>Vypr</string>
 
     <key>CFBundleIdentifier</key>
-    <string>io.glzr.glazewm</string>
+    <string>io.vypr.vypr</string>
 
     <key>CFBundleVersion</key>
     <string>${VERSION}</string>
@@ -24,7 +24,7 @@
     <string>????</string>
 
     <key>CFBundleExecutable</key>
-    <string>glazewm</string>
+    <string>vypr</string>
 
     <key>CFBundleIconFile</key>
     <string>icon</string>
@@ -42,7 +42,7 @@
     <string>public.app-category.utilities</string>
 
     <key>NSHumanReadableCopyright</key>
-    <string>Copyright © glzr-io. All rights reserved.</string>
+    <string>Copyright © Vypr contributors. All rights reserved.</string>
 
     <!-- Run as background/agent app (no dock icon). -->
     <key>LSUIElement</key>
@@ -50,7 +50,7 @@
 
     <!-- Description for why accessibility permissions are needed. -->
     <key>NSAccessibilityUsageDescription</key>
-    <string>GlazeWM requires accessibility permissions to manage and arrange windows.</string>
+    <string>Vypr requires accessibility permissions to manage and arrange windows.</string>
 
     <key>LSArchitecturePriority</key>
     <array>

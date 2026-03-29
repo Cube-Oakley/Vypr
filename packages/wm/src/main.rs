@@ -112,7 +112,7 @@ async fn start_wm(
     if !dispatcher.has_ax_permission(true) {
       anyhow::bail!(
         "Accessibility permissions are not granted. In System Preferences, \
-         go to Privacy & Security > Accessibility and enable GlazeWM."
+         go to Privacy & Security > Accessibility and enable Vypr."
       );
     }
   }
@@ -295,11 +295,11 @@ async fn start_wm(
 
 /// Initialize logging with the specified verbosity level.
 ///
-/// Error logs are saved to `~/.glzr/glazewm/errors.log`.
+/// Error logs are saved to `~/.vypr/errors.log`.
 fn setup_logging(verbosity: &Verbosity) -> anyhow::Result<()> {
   let error_log_dir = home::home_dir()
     .context("Unable to get home directory.")?
-    .join(".glzr/glazewm/");
+    .join(".vypr/");
 
   let error_writer =
     tracing_appender::rolling::never(error_log_dir, "errors.log");
@@ -338,7 +338,7 @@ fn start_watcher_process() -> anyhow::Result<tokio::process::Child, Error>
   let watcher_path = env::current_exe()?
     .parent()
     .context("Failed to resolve path to the watcher process.")?
-    .join("glazewm-watcher");
+    .join("vypr-watcher");
 
   Command::new(&watcher_path)
     .spawn()

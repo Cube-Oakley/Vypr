@@ -2,9 +2,9 @@
   xmlns="http://wixtoolset.org/schemas/v4/wxs"
   xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui"
   xmlns:bal="http://wixtoolset.org/schemas/v4/wxs/bal">
-  <Bundle Name="GlazeWM" Version="$(var.VERSION_NUMBER)"
+  <Bundle Name="Vypr" Version="$(var.VERSION_NUMBER)"
     UpgradeCode="f57adff3-4521-4a6b-87b1-d34a7d9bae1e"
-    Manufacturer="Glzr Software Pte. Ltd."
+    Manufacturer="Vypr"
     DisableModify="yes"
     DisableRemove="yes"
     IconSourceFile="resources/assets/icon.ico"
@@ -19,23 +19,23 @@
         ShowVersion="yes" />
     </BootstrapperApplication>
 
-    <!-- User input variable for whether to install GlazeWM and Zebar. -->
-    <Variable Name="Custom_InstallGlazeWM" Type="numeric" Value="1" bal:Overridable="yes" />
+    <!-- User input variable for whether to install Vypr and Zebar. -->
+    <Variable Name="Custom_InstallVypr" Type="numeric" Value="1" bal:Overridable="yes" />
     <Variable Name="Custom_InstallZebar" Type="numeric" Value="1" bal:Overridable="yes" />
 
     <Chain>
-      <!-- GlazeWM MSI for x64 architectures. -->
+      <!-- Vypr MSI for x64 architectures. -->
       <MsiPackage
-        Id="Custom_GlazeWMPackageX64"
+        Id="Custom_VyprPackageX64"
         SourceFile="out/installer-x64.msi"
         InstallCondition="(VersionNT64 AND NOT NativeMachine) OR (NativeMachine = 34404)"
         bal:DisplayInternalUICondition="1"
         Permanent="yes"
       />
 
-      <!-- GlazeWM MSI for arm64 architectures. -->
+      <!-- Vypr MSI for arm64 architectures. -->
       <MsiPackage
-        Id="Custom_GlazeWMPackageArm64"
+        Id="Custom_VyprPackageArm64"
         SourceFile="out/installer-arm64.msi"
         InstallCondition="NativeMachine = 43620"
         bal:DisplayInternalUICondition="1"
@@ -50,7 +50,7 @@
         bal:DisplayInternalUICondition="1"
         Permanent="yes"
       >
-        <MsiProperty Name="ADD_GLAZEWM_STARTER" Value="1" />
+        <MsiProperty Name="ADD_VYPR_STARTER" Value="1" />
       </MsiPackage>
 
       <!-- Zebar MSI for arm64 architectures. -->
@@ -61,7 +61,7 @@
         bal:DisplayInternalUICondition="1"
         Permanent="yes"
       >
-        <MsiProperty Name="ADD_GLAZEWM_STARTER" Value="1" />
+        <MsiProperty Name="ADD_VYPR_STARTER" Value="1" />
       </MsiPackage>
     </Chain>
   </Bundle>
