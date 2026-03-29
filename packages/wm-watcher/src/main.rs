@@ -10,6 +10,12 @@ use wm_common::{ClientResponseData, ContainerDto, WindowDto, WmEvent};
 use wm_ipc_client::IpcClient;
 use wm_platform::{NativeWindow, NativeWindowWindowsExt, OpacityValue};
 
+use windows::core::w;
+use windows::Win32::Foundation::HWND;
+use windows::Win32::UI::WindowsAndMessaging::{
+  FindWindowExW, FindWindowW, ShowWindow, SW_SHOW,
+};
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
   tracing_subscriber::fmt().init();
@@ -50,6 +56,9 @@ async fn main() -> anyhow::Result<()> {
         let _ =
           window.set_transparency(&OpacityValue::from_alpha(u8::MAX));
       }
+
+      // Restore the Windows taskbar in case it was hidden.
+      restore_taskbar();
     }
   }
 
@@ -135,6 +144,32 @@ async fn watch_managed_handles(
       None => {
         anyhow::bail!("IPC connection closed unexpectedly.")
       }
+    }
+  }
+}
+
+/// Restores the Windows taskbar after a crash.
+fn restore_taskbar() {
+  let class = w!("Shell_TrayWnd");
+
+  // SAFETY: Finding and showing system windows.
+  let hwnd = unsafe { FindWindowW(class, None) };
+  if hwnd.0 != 0 {
+    unsafe {
+      let _ = ShowWindow(hwnd, SW_SHOW);
+    }
+  }
+
+  // Restore secondary taskbars.
+  let secondary_class = w!("Shell_SecondaryTrayWnd");
+  let mut hwnd = unsafe {
+    FindWindowExW(HWND::default(), HWND::default(), secondary_class, None)
+  };
+
+  while hwnd.0 != 0 {
+    unsafe {
+      let _ = ShowWindow(hwnd, SW_SHOW);
+      hwnd = FindWindowExW(HWND::default(), hwnd, secondary_class, None);
     }
   }
 }
