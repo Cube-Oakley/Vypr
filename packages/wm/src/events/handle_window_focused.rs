@@ -25,10 +25,17 @@ pub fn handle_window_focused(
 
   // Update the focus sync state. If the OS focused window is not same as
   // the WM's focused container, then the focus is not synced.
-  state.is_focus_synced = match focused_container.as_window_container() {
-    Ok(window) => *window.native() == *native_window,
-    _ => native_window.is_desktop_window().unwrap_or(false),
-  };
+  //
+  // However, if the focused window is unmanaged (not in the WM's tree),
+  // preserve the current sync state. Unmanaged windows (e.g. app launchers,
+  // status bars) temporarily steal OS focus but shouldn't permanently
+  // disable focus-follows-cursor.
+  if found_window.is_some() {
+    state.is_focus_synced = match focused_container.as_window_container() {
+      Ok(window) => *window.native() == *native_window,
+      _ => native_window.is_desktop_window().unwrap_or(false),
+    };
+  }
 
   // Handle overriding focus on close/minimize. After a window is closed
   // or minimized, the OS or the closed application might automatically
