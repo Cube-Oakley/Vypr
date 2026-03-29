@@ -78,7 +78,7 @@ jobs:
       - name: Create universal binaries
         run: |
           mkdir temp
-          for binary in glazewm glazewm-cli; do
+          for binary in vypr vypr-cli; do
             lipo -create \
               "target/x86_64-apple-darwin/release/$binary" \
               "target/aarch64-apple-darwin/release/$binary" \
@@ -118,7 +118,7 @@ jobs:
         env:
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
         run: |
-          for binary in glazewm glazewm-cli; do
+          for binary in vypr vypr-cli; do
             codesign --force --options runtime --timestamp \
               --sign "$APPLE_SIGNING_IDENTITY" \
               "temp/$binary"
@@ -143,11 +143,11 @@ jobs:
 
       - name: Create app bundle
         run: |
-          CONTENTS_DIR="temp/GlazeWM.app/Contents"
+          CONTENTS_DIR="temp/Vypr.app/Contents"
           mkdir -p "$CONTENTS_DIR/MacOS" "$CONTENTS_DIR/Resources"
 
-          cp temp/glazewm "$CONTENTS_DIR/MacOS/"
-          cp temp/glazewm-cli "$CONTENTS_DIR/MacOS/"
+          cp temp/vypr "$CONTENTS_DIR/MacOS/"
+          cp temp/vypr-cli "$CONTENTS_DIR/MacOS/"
           cp temp/icon.icns "$CONTENTS_DIR/Resources/icon.icns"
           chmod +x "$CONTENTS_DIR/MacOS"/*
 
@@ -162,20 +162,20 @@ jobs:
         run: |
           codesign --force --options runtime --timestamp \
             --sign "$APPLE_SIGNING_IDENTITY" \
-            temp/GlazeWM.app
-          codesign --verify --verbose=2 --deep --strict temp/GlazeWM.app
+            temp/Vypr.app
+          codesign --verify --verbose=2 --deep --strict temp/Vypr.app
 
       - name: Create DMG
         run: |
           DMG_DIR="temp/dmg-contents"
           mkdir -p $DMG_DIR
-          cp -R temp/GlazeWM.app $DMG_DIR/
+          cp -R temp/Vypr.app $DMG_DIR/
 
           # Create a symbolic link to `/Applications` folder.
           ln -s /Applications $DMG_DIR/Applications
 
           # Create the DMG.
-          hdiutil create -volname GlazeWM \
+          hdiutil create -volname Vypr \
             -srcfolder $DMG_DIR \
             -ov -format UDZO \
             installer-universal.dmg

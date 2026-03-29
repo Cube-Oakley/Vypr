@@ -13,9 +13,9 @@ fn main() {
   // Set language to English (US).
   res.set_language(0x0409);
 
-  res.set("OriginalFilename", "glazewm-watcher.exe");
-  res.set("ProductName", "GlazeWM Watcher");
-  res.set("FileDescription", "GlazeWM Watcher");
+  res.set("OriginalFilename", "vypr-watcher.exe");
+  res.set("ProductName", "Vypr Watcher");
+  res.set("FileDescription", "Vypr Watcher");
 
   let version_parts = env!("VERSION_NUMBER")
     .split('.')

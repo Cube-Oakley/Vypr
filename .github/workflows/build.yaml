@@ -62,8 +62,8 @@ jobs:
           mkdir -p "$UPLOAD_DIR"
 
           # Move build artifacts. Suppress errors for missing platform-specific binaries.
-          mv "$SOURCE_DIR"/glazewm{,-cli} \
-            "$SOURCE_DIR"/glazewm{,-cli,-watcher}.exe \
+          mv "$SOURCE_DIR"/vypr{,-cli} \
+            "$SOURCE_DIR"/vypr{,-cli,-watcher}.exe \
             "$UPLOAD_DIR/" 2>/dev/null || true
 
       - uses: actions/upload-artifact@v6

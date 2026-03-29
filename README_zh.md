@@ -1,12 +1,12 @@
 <div align="center">
 
-> V3 终于发布了 - 查看更新日志 [这里](https://github.com/glzr-io/GlazeWM/releases) 🔥
+> V3 终于发布了 - 查看更新日志 [这里](https://github.com/OWNER/vypr/releases) 🔥
 
   <br>
-  <img src="./resources/assets/logo.svg" width="230" alt="GlazeWM logo" />
+  <img src="./resources/assets/logo.svg" width="230" alt="Vypr logo" />
   <br>
 
-# GlazeWM
+# Vypr
 
 **一个受 i3wm 启发的 Windows 平铺窗口管理器。**
 
@@ -14,13 +14,13 @@
 [![Downloads][downloads-badge]][downloads-link]
 [![Good first issues][issues-badge]][issues-link]
 
-GlazeWM 让您可以通过键盘驱动的命令轻松组织窗口并即时调整其布局。
+Vypr 让您可以通过键盘驱动的命令轻松组织窗口并即时调整其布局。
 
 [安装](#安装) •
 [默认快捷键](#默认快捷键) •
 [配置文档](#配置文档) •
 [常见问题](#常见问题) •
-[贡献 ↗](https://github.com/glzr-io/glazewm/blob/main/CONTRIBUTING.md)
+[贡献 ↗](https://github.com/OWNER/vypr/blob/main/CONTRIBUTING.md)
 
 ![Demo video][demo-video]
 
@@ -36,38 +36,38 @@ GlazeWM 让您可以通过键盘驱动的命令轻松组织窗口并即时调整
 
 ## 安装
 
-**GlazeWM 的最新版本可通过 [releases](https://github.com/glzr-io/GlazeWM/releases) 下载。** 在安装过程中可以通过复选框选择性安装 Zebar。
+**Vypr 的最新版本可通过 [releases](https://github.com/OWNER/vypr/releases) 下载。** 在安装过程中可以通过复选框选择性安装 Zebar。
 
-GlazeWM 也可以通过多个包管理器获得：
+Vypr 也可以通过多个包管理器获得：
 
 **Winget**
 
 ```sh
-winget install GlazeWM
+winget install Vypr
 ```
 
 **Chocolatey**
 
 ```sh
-choco install glazewm
+choco install vypr
 ```
 
 **Scoop**
 
 ```sh
 scoop bucket add extras
-scoop install extras/glazewm
+scoop install extras/vypr
 ```
 
 ## 贡献
 
 帮助修复困扰您的问题，或添加您一直想要的功能！我们非常欢迎贡献。
 
-本地开发和指南可在 [贡献指南](https://github.com/glzr-io/glazewm/blob/main/CONTRIBUTING.md) 中找到。
+本地开发和指南可在 [贡献指南](https://github.com/OWNER/vypr/blob/main/CONTRIBUTING.md) 中找到。
 
 ## 默认快捷键
 
-在 GlazeWM 首次启动时，可以选择性地生成默认配置。
+在 Vypr 首次启动时，可以选择性地生成默认配置。
 
 以下是所有可用命令及其默认快捷键的速查表。
 
@@ -75,21 +75,21 @@ scoop install extras/glazewm
 
 ## 配置文档
 
-[默认配置](https://github.com/glzr-io/glazewm/blob/main/resources/assets/sample-config.yaml) 文件生成在 `%userprofile%\.glzr\glazewm\config.yaml`。
+[默认配置](https://github.com/OWNER/vypr/blob/main/resources/assets/sample-config.yaml) 文件生成在 `%userprofile%\.vypr\config.yaml`。
 
-要使用不同的配置文件位置，您可以使用 CLI 参数 `--config="..."` 启动 GlazeWM 可执行文件，如下所示：
-
-```sh
-./glazewm.exe start --config="C:\<配置文件路径>\config.yaml"
-```
-
-或者为 `GLAZEWM_CONFIG_PATH` 环境变量传递一个值：
+要使用不同的配置文件位置，您可以使用 CLI 参数 `--config="..."` 启动 Vypr 可执行文件，如下所示：
 
 ```sh
-setx GLAZEWM_CONFIG_PATH "C:\<配置文件路径>\config.yaml"
+./vypr.exe start --config="C:\<配置文件路径>\config.yaml"
 ```
 
-使用自定义路径的好处是您可以为配置文件选择不同的名称，例如 `glazewm.yaml`。
+或者为 `VYPR_CONFIG_PATH` 环境变量传递一个值：
+
+```sh
+setx VYPR_CONFIG_PATH "C:\<配置文件路径>\config.yaml"
+```
+
+使用自定义路径的好处是您可以为配置文件选择不同的名称，例如 `vypr.yaml`。
 
 ### 配置：常规
 
@@ -323,7 +323,7 @@ window_behavior:
 
 ### 配置：绑定模式
 
-绑定模式用于在 GlazeWM 运行时修改快捷键。
+绑定模式用于在 Vypr 运行时修改快捷键。
 
 可以使用 `wm-enable-binding-mode --name <名称>` 启用绑定模式，使用 `wm-disable-binding-mode --name <名称>` 禁用。
 
@@ -347,15 +347,15 @@ binding_modes:
 
 ## 常见问题
 
-**问：如何在启动时运行 GlazeWM？**
+**问：如何在启动时运行 Vypr？**
 
-通过右键单击 GlazeWM 可执行文件 -> `创建快捷方式` 为可执行文件创建快捷方式。将快捷方式放在启动文件夹中，您可以通过在文件资源管理器的顶部栏中输入 `shell:startup` 来访问该文件夹。
+通过右键单击 Vypr 可执行文件 -> `创建快捷方式` 为可执行文件创建快捷方式。将快捷方式放在启动文件夹中，您可以通过在文件资源管理器的顶部栏中输入 `shell:startup` 来访问该文件夹。
 
 **问：如何创建 `<插入布局>`？**
 
 您可以通过使用 `alt+v` 更改平铺方向来创建自定义布局。这会改变下一个窗口相对于当前窗口的放置位置。如果当前窗口的方向是水平的，新窗口将放置在其右侧。如果是垂直的，将放置在其下方。这也适用于移动窗口；固定窗口的平铺方向将影响移动窗口的放置位置。
 
-社区制作的脚本如 [Dutch-Raptor/GAT-GWM](https://github.com/Dutch-Raptor/GAT-GWM) 和 [burgr033/GlazeWM-autotiling-python](https://github.com/burgr033/GlazeWM-autotiling-python) 可用于自动更改平铺方向。目前不支持自动布局的原生支持。
+社区制作的脚本如 [Dutch-Raptor/GAT-GWM](https://github.com/Dutch-Raptor/GAT-GWM) 和 [burgr033/Vypr-autotiling-python](https://github.com/burgr033/Vypr-autotiling-python) 可用于自动更改平铺方向。目前不支持自动布局的原生支持。
 
 **问：如何为 `<插入应用程序>` 创建规则？**
 
@@ -371,14 +371,14 @@ window_rules:
 
 像 Winlister 或 AutoHotkey 的 Window Spy 这样的程序对于获取窗口信息很有用。
 
-**问：当 `<插入应用程序>` 聚焦时，如何忽略 GlazeWM 的快捷键？**
+**问：当 `<插入应用程序>` 聚焦时，如何忽略 Vypr 的快捷键？**
 
 目前不支持此功能，但是，默认配置中的快捷键 `alt+shift+p` 用于禁用所有其他快捷键，直到再次按下 `alt+shift+p`。
 
 [discord-badge]: https://img.shields.io/discord/1041662798196908052.svg?logo=discord&colorB=7289DA
 [discord-link]: https://discord.gg/ud6z3qjRvM
-[downloads-badge]: https://img.shields.io/github/downloads/glzr-io/glazewm/total?logo=github&logoColor=white
-[downloads-link]: https://github.com/glzr-io/glazewm/releases
+[downloads-badge]: https://img.shields.io/github/downloads/OWNER/vypr/total?logo=github&logoColor=white
+[downloads-link]: https://github.com/OWNER/vypr/releases
 [issues-badge]: https://img.shields.io/badge/good_first_issues-7057ff
-[issues-link]: https://github.com/orgs/glzr-io/projects/4/views/1?sliceBy%5Bvalue%5D=good+first+issue
+[issues-link]: https://github.com/OWNER/vypr/issues
 [demo-video]: resources/assets/demo.webp
