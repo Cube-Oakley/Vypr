@@ -30,6 +30,10 @@ pub use platform_event::*;
 pub use single_instance::*;
 pub use thread_bound::*;
 pub use window_listener::*;
+/// Re-export of `BorderOverlayManager` for use by the `wm` crate.
+#[cfg(target_os = "windows")]
+pub type BorderOverlayManager =
+  platform_impl::border_overlay::BorderOverlayManager;
 // TODO: Avoid exposing `windows` crate types in the public API.
 #[cfg(target_os = "windows")]
 pub use windows::Win32::UI::WindowsAndMessaging::{

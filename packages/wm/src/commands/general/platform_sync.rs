@@ -29,9 +29,10 @@ pub fn platform_sync(
     sync_focus(&focused_container, state)?;
   }
 
-  if !state.pending_sync.containers_to_redraw().is_empty()
-    || !state.pending_sync.workspaces_to_reorder().is_empty()
-  {
+  let has_redrawn = !state.pending_sync.containers_to_redraw().is_empty()
+    || !state.pending_sync.workspaces_to_reorder().is_empty();
+
+  if has_redrawn {
     redraw_containers(&focused_container, state, config)?;
   }
 
@@ -41,15 +42,27 @@ pub fn platform_sync(
     jump_cursor(focused_container.clone(), state, config)?;
   }
 
+  // Re-apply effects when focus changes, config reloads, or when
+  // containers are redrawn (tiling layout changes move windows, so
+  // gradient border overlays need repositioning).
   if state.pending_sync.needs_focused_effect_update()
     || state.pending_sync.needs_all_effects_update()
+    || has_redrawn
   {
     // Keep reference to the previous window that had focus effects
     // applied.
     let prev_effects_window = state.prev_effects_window.clone();
 
     if let Ok(window) = focused_container.as_window_container() {
-      apply_window_effects(&window, true, config);
+      apply_window_effects(
+        &window,
+        true,
+        config,
+        #[cfg(target_os = "windows")]
+        &mut state.border_overlay_manager,
+        #[cfg(target_os = "windows")]
+        &state.dispatcher,
+      );
       state.prev_effects_window = Some(window.clone());
     } else {
       state.prev_effects_window = None;
@@ -59,17 +72,26 @@ pub fn platform_sync(
     // For the sake of performance, we only update the border of the
     // previously focused window. If the `reset_window_effects` flag is
     // passed, the unfocused border is applied to all unfocused windows.
-    let unfocused_windows =
-      if state.pending_sync.needs_all_effects_update() {
+    let unfocused_windows: Vec<_> =
+      if state.pending_sync.needs_all_effects_update() || has_redrawn {
         state.windows()
       } else {
         prev_effects_window.into_iter().collect()
       }
       .into_iter()
-      .filter(|window| window.id() != focused_container.id());
+      .filter(|window| window.id() != focused_container.id())
+      .collect();
 
     for window in unfocused_windows {
-      apply_window_effects(&window, false, config);
+      apply_window_effects(
+        &window,
+        false,
+        config,
+        #[cfg(target_os = "windows")]
+        &mut state.border_overlay_manager,
+        #[cfg(target_os = "windows")]
+        &state.dispatcher,
+      );
     }
   }
 
@@ -514,6 +536,8 @@ fn apply_window_effects(
   window: &WindowContainer,
   is_focused: bool,
   config: &UserConfig,
+  #[cfg(target_os = "windows")] overlay_manager: &mut wm_platform::BorderOverlayManager,
+  #[cfg(target_os = "windows")] dispatcher: &wm_platform::Dispatcher,
 ) {
   let window_effects = &config.value.window_effects;
 
@@ -530,7 +554,7 @@ fn apply_window_effects(
   if window_effects.focused_window.border.enabled
     || window_effects.other_windows.border.enabled
   {
-    apply_border_effect(window, effect_config);
+    apply_border_effect(window, effect_config, overlay_manager, dispatcher);
   }
 
   #[cfg(target_os = "windows")]
@@ -559,24 +583,74 @@ fn apply_window_effects(
 fn apply_border_effect(
   window: &WindowContainer,
   effect_config: &WindowEffectConfig,
+  overlay_manager: &mut wm_platform::BorderOverlayManager,
+  dispatcher: &wm_platform::Dispatcher,
 ) {
-  let border_color = if effect_config.border.enabled {
-    Some(&effect_config.border.color)
-  } else {
-    None
+  let handle = {
+    #[allow(clippy::cast_possible_wrap)]
+    let h = window.native().id().0 as isize;
+    h
   };
 
-  _ = window.native().set_border_color(border_color);
+  if !effect_config.border.enabled {
+    _ = window.native().set_border_color(None);
+    overlay_manager.destroy(handle, dispatcher);
+    return;
+  }
 
-  let native = window.native().clone();
-  let border_color = border_color.cloned();
+  if effect_config.border.is_gradient() {
+    // Disable DWM solid border when using gradient overlay.
+    _ = window.native().set_border_color(None);
 
-  // Re-apply border color after a short delay to better handle
-  // windows that change it themselves.
-  tokio::task::spawn(async move {
-    tokio::time::sleep(std::time::Duration::from_millis(50)).await;
-    _ = native.set_border_color(border_color.as_ref());
-  });
+    // Use the tiling tree's calculated rect instead of the OS frame.
+    // The OS frame may still reflect the pre-tiled position when
+    // SetWindowPos hasn't completed yet, which causes a flash of a
+    // giant overlay at the window's original size.
+    // For new overlays, use the tiling tree rect to prevent a flash
+    // at the pre-tiled window size (the OS frame may not have updated
+    // yet). For existing overlays, use the DWM frame for pixel-perfect
+    // alignment since the window has already settled.
+    let is_new = !overlay_manager.has_overlay(handle);
+
+    let frame_result = if is_new {
+      window.to_rect()
+    } else {
+      window.native().frame().map_err(Into::into)
+    };
+
+    if let Ok(frame) = frame_result {
+
+      let colors = effect_config.border.effective_colors();
+      if let Err(err) = overlay_manager.update(
+        handle,
+        &frame,
+        &colors,
+        effect_config.border.gradient_angle,
+        effect_config.border.width,
+        dispatcher,
+      ) {
+        tracing::warn!("Failed to update border overlay: {err}");
+      }
+    } else {
+      tracing::warn!("Failed to get window frame for border overlay.");
+    }
+  } else {
+    // Solid color path (existing behavior).
+    overlay_manager.destroy(handle, dispatcher);
+
+    let border_color = Some(&effect_config.border.color);
+    _ = window.native().set_border_color(border_color);
+
+    let native = window.native().clone();
+    let border_color = border_color.cloned();
+
+    // Re-apply border color after a short delay to better handle
+    // windows that change it themselves.
+    tokio::task::spawn(async move {
+      tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+      _ = native.set_border_color(border_color.as_ref());
+    });
+  }
 }
 
 #[cfg(target_os = "windows")]

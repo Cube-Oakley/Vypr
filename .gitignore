@@ -13,3 +13,6 @@ out/
 # IDE files
 .vs/
 .idea/
+
+# Claude Code memory (may contain personal info)
+.claude/projects/

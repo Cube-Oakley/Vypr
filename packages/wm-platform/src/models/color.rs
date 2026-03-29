@@ -18,6 +18,33 @@ impl Color {
     // SAFETY: An invalid hex value is unrepresentable.
     u32::from_str_radix(&bgr, 16).unwrap()
   }
+
+  /// Returns premultiplied ARGB as a `u32` for use with
+  /// `UpdateLayeredWindow` pixel buffers.
+  #[must_use]
+  pub fn to_premultiplied_argb(&self) -> u32 {
+    let a = u32::from(self.a);
+    let r = (u32::from(self.r) * a) / 255;
+    let g = (u32::from(self.g) * a) / 255;
+    let b = (u32::from(self.b) * a) / 255;
+    (a << 24) | (r << 16) | (g << 8) | b
+  }
+
+  /// Linearly interpolates between `self` and `other` at parameter `t`
+  /// (clamped to 0.0..=1.0).
+  #[must_use]
+  pub fn lerp(&self, other: &Color, t: f64) -> Color {
+    let t = t.clamp(0.0, 1.0);
+    let mix = |a: u8, b: u8| -> u8 {
+      (f64::from(a) + (f64::from(b) - f64::from(a)) * t) as u8
+    };
+    Color {
+      r: mix(self.r, other.r),
+      g: mix(self.g, other.g),
+      b: mix(self.b, other.b),
+      a: mix(self.a, other.a),
+    }
+  }
 }
 
 impl FromStr for Color {

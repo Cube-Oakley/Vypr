@@ -31,6 +31,15 @@ pub fn unmanage_window(
     flatten_child_split_containers(ancestor)?;
   }
 
+  #[cfg(target_os = "windows")]
+  {
+    #[allow(clippy::cast_possible_wrap)]
+    let handle = window.native().id().0 as isize;
+    state
+      .border_overlay_manager
+      .destroy(handle, &state.dispatcher);
+  }
+
   state.emit_event(WmEvent::WindowUnmanaged {
     unmanaged_id: window.id(),
     #[allow(clippy::cast_possible_wrap, clippy::unnecessary_cast)]
