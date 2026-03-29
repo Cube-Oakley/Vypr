@@ -260,8 +260,47 @@ pub struct BorderEffectConfig {
   /// Whether to enable the effect.
   pub enabled: bool,
 
-  /// Color of the window border.
+  /// Single solid color for the border (backward compatible).
+  /// Ignored when `colors` has 2+ entries.
   pub color: Color,
+
+  /// Multiple colors for gradient borders. When 2+ colors are
+  /// specified, a gradient overlay is rendered instead of using
+  /// DWM's solid border.
+  #[serde(default)]
+  pub colors: Vec<Color>,
+
+  /// Gradient angle in degrees (0 = top-to-bottom, 90 =
+  /// left-to-right). Only used for gradient borders.
+  #[serde(default)]
+  pub gradient_angle: f64,
+
+  /// Border width in pixels. Only used for gradient borders.
+  #[serde(default = "default_border_width")]
+  pub width: u32,
+}
+
+fn default_border_width() -> u32 {
+  3
+}
+
+impl BorderEffectConfig {
+  /// Returns true if gradient rendering is needed (2+ colors).
+  #[must_use]
+  pub fn is_gradient(&self) -> bool {
+    self.colors.len() >= 2
+  }
+
+  /// Returns the effective color list. Falls back to `color` if
+  /// `colors` is empty.
+  #[must_use]
+  pub fn effective_colors(&self) -> Vec<Color> {
+    if self.colors.is_empty() {
+      vec![self.color.clone()]
+    } else {
+      self.colors.clone()
+    }
+  }
 }
 
 impl Default for BorderEffectConfig {
@@ -274,6 +313,9 @@ impl Default for BorderEffectConfig {
         b: 255,
         a: 255,
       },
+      colors: vec![],
+      gradient_angle: 0.0,
+      width: default_border_width(),
     }
   }
 }

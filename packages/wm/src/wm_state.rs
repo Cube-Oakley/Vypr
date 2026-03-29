@@ -9,7 +9,7 @@ use wm_platform::{
   Direction, Dispatcher, Display, NativeWindow, Point, Rect,
 };
 #[cfg(target_os = "windows")]
-use wm_platform::{NativeWindowWindowsExt, OpacityValue};
+use wm_platform::{BorderOverlayManager, NativeWindowWindowsExt, OpacityValue};
 
 use crate::{
   commands::{
@@ -67,6 +67,10 @@ pub struct WmState {
   /// Whether the OS focused window is the same as the WM focused window.
   pub is_focus_synced: bool,
 
+  /// Manages gradient border overlay windows.
+  #[cfg(target_os = "windows")]
+  pub border_overlay_manager: BorderOverlayManager,
+
   /// Whether the initial state has been populated.
   has_initialized: bool,
 
@@ -94,6 +98,8 @@ impl WmState {
       ignored_windows: Vec::new(),
       is_paused: false,
       is_focus_synced: false,
+      #[cfg(target_os = "windows")]
+      border_overlay_manager: BorderOverlayManager::new(),
       has_initialized: false,
       event_tx,
       exit_tx,
