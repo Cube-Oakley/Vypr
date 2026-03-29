@@ -1,18 +1,24 @@
 use anyhow::Context;
 use tracing::info;
-use wm_common::{try_warn, WindowRuleEvent, WindowState, WmEvent};
+use wm_common::{
+  try_warn, TilingDirection, WindowRuleEvent, WindowState, WmEvent,
+};
 use wm_platform::{NativeWindow, RectDelta};
 
 use crate::{
   commands::{
-    container::{attach_container, set_focused_descendant},
+    container::{
+      attach_container, set_focused_descendant, wrap_in_split_container,
+    },
     window::run_window_rules,
   },
   models::{
     Container, Monitor, NativeWindowProperties, NonTilingWindow,
-    TilingWindow, WindowContainer,
+    SplitContainer, TilingWindow, WindowContainer,
   },
-  traits::{CommonGetters, PositionGetters, WindowGetters},
+  traits::{
+    CommonGetters, PositionGetters, TilingDirectionGetters, WindowGetters,
+  },
   user_config::UserConfig,
   wm_state::WmState,
 };
@@ -173,7 +179,7 @@ fn create_window(
   // provided), otherwise, add as a sibling of the focused container.
   let (target_parent, target_index) = match target_parent {
     Some(parent) => (parent, 0),
-    None => insertion_target(&window_state, state)?,
+    None => insertion_target(&window_state, state, config)?,
   };
 
   let target_workspace =
@@ -318,10 +324,15 @@ fn window_state_to_create(
 ///      tiling window found.
 ///   3. If no tiling windows exist, append to the workspace.
 ///
+/// When dwindle layout is enabled, the focused window is wrapped in a
+/// split container whose direction is based on its aspect ratio,
+/// creating the characteristic spiral pattern.
+///
 /// Returns tuple of (parent container, insertion index).
 fn insertion_target(
   window_state: &WindowState,
   state: &WmState,
+  config: &UserConfig,
 ) -> anyhow::Result<(Container, usize)> {
   let focused_container =
     state.focused_container().context("No focused container.")?;
@@ -340,6 +351,16 @@ fn insertion_target(
     };
 
     if let Some(sibling) = sibling {
+      // With dwindle layout, wrap the sibling in a split container
+      // whose direction is chosen by the sibling's aspect ratio.
+      if config.value.general.dwindle_layout {
+        if let Ok(parent) =
+          dwindle_wrap(&sibling, &config.value.gaps)
+        {
+          return Ok((parent, 1));
+        }
+      }
+
       return Ok((
         sibling.parent().context("No parent.")?,
         sibling.index() + 1,
@@ -352,4 +373,58 @@ fn insertion_target(
     focused_workspace.clone().into(),
     focused_workspace.child_count(),
   ))
+}
+
+/// Wraps a tiling window in a new `SplitContainer` whose direction is
+/// determined by the window's aspect ratio. If the window is wider
+/// than tall, the split is horizontal (next window goes right);
+/// otherwise vertical (next window goes below).
+///
+/// Returns the new split container as the parent for insertion.
+/// Wraps a tiling window in a new `SplitContainer` whose direction is
+/// determined by the window's aspect ratio. If the window is wider
+/// than tall, the split is horizontal (next window goes right);
+/// otherwise vertical (next window goes below).
+///
+/// Returns the new split container as the parent for insertion.
+fn dwindle_wrap(
+  sibling: &Container,
+  gaps_config: &wm_common::GapsConfig,
+) -> anyhow::Result<Container> {
+  let rect = sibling.to_rect()?;
+
+  let desired_direction = if rect.width() >= rect.height() {
+    TilingDirection::Horizontal
+  } else {
+    TilingDirection::Vertical
+  };
+
+  let parent = sibling
+    .direction_container()
+    .context("No direction container.")?;
+
+  // If the parent already has the desired direction, no wrapping
+  // needed — insert as a normal sibling.
+  if parent.tiling_direction() == desired_direction {
+    return Ok(sibling.parent().context("No parent.")?);
+  }
+
+  // Wrap the sibling in a new split container with the desired
+  // direction.
+  let tiling_sibling = sibling
+    .as_tiling_container()
+    .context("Not a tiling container.")?;
+
+  let split = SplitContainer::new(
+    desired_direction,
+    gaps_config.clone(),
+  );
+
+  wrap_in_split_container(
+    &split,
+    &parent.into(),
+    &[tiling_sibling],
+  )?;
+
+  Ok(split.into())
 }

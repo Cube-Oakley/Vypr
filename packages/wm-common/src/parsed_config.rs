@@ -73,6 +73,11 @@ pub struct GeneralConfig {
   /// Config for automatically moving the cursor.
   pub cursor_jump: CursorJumpConfig,
 
+  /// Whether to use dwindle auto-tiling. When enabled, the tiling
+  /// direction is automatically set based on the focused window's
+  /// aspect ratio, creating a spiral layout pattern.
+  pub dwindle_layout: bool,
+
   /// Whether to automatically focus windows underneath the cursor.
   pub focus_follows_cursor: bool,
 
@@ -102,6 +107,7 @@ impl Default for GeneralConfig {
   fn default() -> Self {
     GeneralConfig {
       cursor_jump: CursorJumpConfig::default(),
+      dwindle_layout: false,
       focus_follows_cursor: false,
       toggle_workspace_on_refocus: true,
       startup_commands: vec![],
