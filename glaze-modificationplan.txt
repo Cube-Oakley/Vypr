@@ -1,0 +1,308 @@
+GlazeWM Fork — Feature Modification Plan
+=========================================
+
+CONTEXT
+-------
+We've been building "HyprShell", a C# companion process that runs alongside
+GlazeWM v3 to add Hyprland-style behaviors that GlazeWM doesn't provide
+natively. The companion approach works but fights GlazeWM constantly — IPC
+round-trips, subscription events that never fire, no direct access to the
+tiling tree, visual artifacts from doing layout changes externally, etc.
+
+The new plan: fork GlazeWM (Rust) and implement these features directly in
+the window manager, where we have access to the layout tree, can intercept
+windows before they're managed, and can coordinate animations with the
+tiling engine natively.
+
+GlazeWM repo: https://github.com/glzr-io/glazewm
+Language: Rust
+License: GPL-2.0
+
+TARGET ENVIRONMENT
+------------------
+- Windows 11 Pro laptop
+- Zebar or YASB status bar
+- Flow Launcher (app launcher)
+- Taskbar hidden
+- User has Super remapped to Alt at keyboard firmware level, so primary
+  modifier key is Alt (seen by Windows as Alt, not Win)
+
+
+FEATURES TO IMPLEMENT
+=====================
+
+1. WINDOW BORDERS (Gradient)
+-----------------------------
+Status in companion: Working (GDI+/UpdateLayeredWindow overlay windows)
+
+What it does:
+- Draws colored borders around the focused/active window and
+  dimmer borders around inactive windows
+- Borders use gradient rendering (not solid color) — this is the key
+  differentiator from GlazeWM's built-in borders
+- Hides borders for windows on cloaked/inactive workspaces (DWM cloaking)
+- Per-app exclude rules (e.g. skip Zebar, Flow Launcher)
+
+Why it's better in the fork:
+- GlazeWM already has a border system — we can extend it with gradient
+  support instead of running separate overlay windows
+- Direct access to focus/workspace state eliminates polling
+- No overlay window z-order fighting
+
+Current config options:
+- Active border color(s) (gradient stops)
+- Inactive border color(s)
+- Border width
+- Per-app exclusion list
+
+
+2. ALT+LEFT-CLICK DRAG TO MOVE WINDOWS
+----------------------------------------
+Status in companion: Working
+
+What it does:
+- Hold Alt + left mouse button on any window to grab and drag it
+- On drag start: window is floated (removed from tiling layout)
+- Window follows cursor in real-time (centered on grab point)
+- On release: window is retiled (tiling layout absorbs it back,
+  ideally at the position where it was dropped)
+
+Why it's better in the fork:
+- Can float/unfloat without IPC round-trip
+- Can access the tiling tree to determine drop target zone directly
+- No race conditions between companion and GlazeWM both trying to
+  manage the same window
+
+Implementation notes:
+- Needs global low-level mouse hook (WH_MOUSE_LL) + keyboard hook
+  (WH_KEYBOARD_LL), or can be integrated into GlazeWM's existing
+  keybinding system
+- During drag, window should be exempt from all tiling rules
+- Drop target: find nearest tiling zone/container based on cursor
+  position and insert there
+
+
+3. ALT+RIGHT-CLICK DRAG TO RESIZE WINDOWS
+-------------------------------------------
+Status in companion: Working (but with visual artifacts)
+
+What it does:
+- Hold Alt + right mouse button on any window to resize it
+- Resize direction determined by which quadrant of the window the
+  click lands in (top-left, top-right, bottom-left, bottom-right)
+- Adjusts the tiling split ratios in real-time as mouse moves
+- Self-throttling to avoid overwhelming the layout engine
+
+Why it's better in the fork:
+- Can modify split ratios directly in the layout tree instead of
+  sending resize commands through IPC
+- Eliminates green/black visual artifacts during rapid resize
+  (artifacts are caused by the window being resized externally while
+  GlazeWM is also trying to enforce layout)
+- Can coordinate the resize of all affected containers atomically
+
+Implementation notes:
+- Need to identify which split(s) in the tiling tree the drag affects
+- Resize should adjust the ratio of the relevant parent container's split
+- All sibling windows update simultaneously
+
+
+4. DWINDLE AUTO-TILING
+-----------------------
+Status in companion: Working (via polling)
+
+What it does:
+- Replicates Hyprland's dwindle layout behavior
+- On each focus change, checks the focused container's dimensions
+- If width >= height: set tiling direction to "horizontal"
+  (next window splits to the right)
+- If height > width: set tiling direction to "vertical"
+  (next window splits below)
+- This causes windows to automatically alternate split directions
+  based on aspect ratio, creating the characteristic dwindle spiral
+
+Why it's better in the fork:
+- Can hook directly into the focus-change handler and the
+  window-manage pipeline — no polling needed
+- GlazeWM's subscription events are unreliable via IPC (events
+  sometimes never deliver), so the companion had to poll every 150ms
+- Can set tiling direction as part of the manage-window flow,
+  guaranteeing it's set before the new window is tiled
+
+Implementation notes:
+- Should be a layout mode option (e.g. "dwindle" alongside existing
+  "columns"/"rows" modes), not a hack on top of manual direction setting
+- Configurable: enable/disable, option to use strict dwindle vs
+  simple alternating
+- Respect manual tiling direction overrides from keybinds
+
+
+5. FOCUS FOLLOWS CURSOR (Mouse Hover to Activate)
+---------------------------------------------------
+Status in companion: BLOCKED (GetCursorPos returns (0,0) from
+background processes; hook callbacks can't do IO without killing hooks)
+
+GlazeWM has a native focus_follows_cursor option, but it has a known
+bug (#1326): focus-follows-cursor breaks after interacting with
+unmanaged windows (Flow Launcher, Zebar). User must click a managed
+window to re-enable it.
+
+What it does:
+- Moving the mouse cursor over a window automatically focuses it
+- No click required
+- Standard behavior in Linux tiling WMs
+
+Why it's better in the fork:
+- Can fix the #1326 bug directly — the issue is likely that GlazeWM
+  loses track of which window should be focused after an unmanaged
+  window interaction
+- Direct access to the window management state means we can properly
+  handle the unmanaged→managed window transition
+- No need for the fragile workarounds we tried (simulated clicks,
+  IPC focus commands, config reloads — all failed)
+
+
+6. NEW WINDOW INTERCEPTION (Eliminate Flash-of-Untiled)
+--------------------------------------------------------
+Status in companion: Working (CBT hook + opacity fade-in)
+
+What it does:
+- When a new window is created, it's intercepted before it's visible
+- Window starts fully transparent (opacity 0)
+- After GlazeWM finishes tiling it (position stabilizes), fade it in
+  over ~150ms
+- Eliminates the jarring "flash" where a window briefly appears at
+  its default size/position before being tiled
+
+Why it's better in the fork:
+- GlazeWM knows exactly when tiling is complete — no need for the
+  "debounce position changes for 50ms" heuristic
+- Can set the window invisible as part of the manage flow, before
+  any painting occurs
+- No race condition between the CBT hook and GlazeWM's own window
+  management
+
+Filter criteria (skip interception for):
+- Child windows, tooltips, menus, IME windows
+- Dialog windows (#32770 class)
+- Windows matching ignore rules
+- Configurable allowlist/blocklist
+
+
+7. TILING RESIZE ANIMATIONS (DWM Thumbnails)
+----------------------------------------------
+Status in companion: Not yet implemented (Phase 3)
+
+What it does:
+- When tiling layout changes (window added, removed, layout toggled),
+  animate windows smoothly from old positions to new positions
+- Uses DWM thumbnail API: register thumbnails of each window, hide
+  real windows, animate thumbnails, then swap real windows in
+- Cubic ease-out interpolation, ~200ms duration
+- Handles multiple simultaneous animations, cancellation, chaining
+
+Why it's better in the fork:
+- The tiling engine knows all the old and new rects — no need to
+  snapshot positions externally
+- Can batch the animation start with the layout change
+- Can prevent the layout engine from moving real windows until
+  animation completes
+
+
+8. WORKSPACE SWITCH ANIMATIONS
+-------------------------------
+Status in companion: Not yet implemented (Phase 3)
+
+What it does:
+- Smooth slide/fade animation when switching workspaces
+- Eased SetWindowPos calls over ~200ms
+- VSync-aware frame timing
+
+Why it's better in the fork:
+- Direct access to workspace show/hide logic
+- Can coordinate the hide-old + show-new timing
+
+
+9. TASKBAR & SHELL HIDING
+---------------------------
+Status in companion: Working
+
+What it does:
+- Hides the Windows taskbar and reclaims the screen space
+- Disables notification center and action center popups
+- Survives explorer.exe restarts
+- Restores everything on exit
+
+Note: This may or may not belong in the fork. It's somewhat orthogonal
+to window management. Could stay as a separate utility or be a
+GlazeWM config option.
+
+
+10. TITLE BAR REMOVAL
+-----------------------
+Status: Not yet implemented
+
+What it does:
+- Remove/hide the minimize/maximize/close title bar buttons on
+  selected applications
+- Per-app configuration
+
+This is cosmetic polish but contributes to the clean tiling WM look.
+
+
+PAIN POINTS WITH THE COMPANION APPROACH (Why Fork)
+====================================================
+These are the specific problems that motivate moving to a fork:
+
+1. GlazeWM IPC subscription events are unreliable — events sometimes
+   never deliver to WebSocket subscribers. We had to fall back to
+   polling for everything.
+
+2. No access to the tiling tree — we can't read split ratios, container
+   hierarchies, or sibling relationships. We can only query basic
+   window info.
+
+3. Race conditions — the companion and GlazeWM both try to manage
+   windows, leading to flickering, position fights, and inconsistent
+   state.
+
+4. Visual artifacts during resize — resizing externally while GlazeWM
+   enforces layout causes green/black flashes.
+
+5. Focus-follows-cursor bug (#1326) — can't fix from outside. The bug
+   is in GlazeWM's internal focus tracking.
+
+6. Animation coordination — impossible to do smooth animations when we
+   don't control when windows move. GlazeWM moves windows, then we
+   try to animate, but the move already happened.
+
+7. Performance overhead — polling every 150ms, running overlay windows
+   for borders, IPC round-trips for every action. All of this goes away
+   with direct integration.
+
+8. SetWinEventHook callbacks never fire in .NET 8 WinForms context —
+   unknown root cause, forced more polling.
+
+
+TECHNICAL NOTES FOR THE FORK
+==============================
+- GlazeWM is written in Rust
+- GlazeWM v3 architecture uses a WebSocket IPC server on localhost:6123
+- Key internal concepts: containers (tree structure), workspaces,
+  tiling direction, split ratios
+- The fork should maintain compatibility with Zebar (status bar) which
+  communicates via the same IPC
+- User's GlazeWM config has: focus_follows_cursor: true, built-in
+  borders disabled, various Alt+key bindings
+
+GLAZEWM CONFIG KEYBINDS CURRENTLY IN USE
+------------------------------------------
+- Alt+T = launch terminal
+- Alt+B = launch Chrome
+- Alt+F = launch Explorer
+- Alt+Shift+T = toggle tiling/floating
+- Alt+Shift+F = toggle fullscreen
+- Alt+H/J/K/L = focus direction (vim keys)
+- Alt+Shift+H/J/K/L = move window direction
+- Alt+1-9 = switch workspace
+- Alt+Shift+1-9 = move window to workspace
