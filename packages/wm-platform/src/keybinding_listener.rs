@@ -82,6 +82,10 @@ pub struct KeybindingListener {
   /// Whether the listener is currently enabled.
   enabled: Arc<AtomicBool>,
 
+  /// When true, the Windows/Super key is blocked from reaching
+  /// other applications (prevents Start menu from opening).
+  block_win_key: Arc<AtomicBool>,
+
   /// The underlying keyboard hook used to listen for key events.
   keyboard_hook: platform_impl::KeyboardHook,
 }
@@ -98,10 +102,12 @@ impl KeybindingListener {
       Arc::new(Mutex::new(Self::create_keybinding_map(keybindings)));
 
     let enabled = Arc::new(AtomicBool::new(true));
+    let block_win_key = Arc::new(AtomicBool::new(false));
 
     let keyboard_hook = Self::create_keyboard_hook(
       keybinding_map.clone(),
       enabled.clone(),
+      block_win_key.clone(),
       event_tx,
       dispatcher,
     )?;
@@ -110,6 +116,7 @@ impl KeybindingListener {
       event_rx,
       keybinding_map,
       enabled,
+      block_win_key,
       keyboard_hook,
     })
   }
@@ -136,6 +143,12 @@ impl KeybindingListener {
     self.enabled.store(enabled, Ordering::Relaxed);
   }
 
+  /// Enables or disables blocking the Windows/Super key from
+  /// reaching other applications.
+  pub fn set_block_win_key(&self, block: bool) {
+    self.block_win_key.store(block, Ordering::Release);
+  }
+
   /// Terminates the keybinding listener.
   pub fn terminate(&mut self) -> crate::Result<()> {
     self.keyboard_hook.terminate()
@@ -145,11 +158,19 @@ impl KeybindingListener {
   fn create_keyboard_hook(
     keybinding_map: Arc<Mutex<HashMap<Key, Vec<Keybinding>>>>,
     enabled: Arc<AtomicBool>,
+    block_win_key: Arc<AtomicBool>,
     event_tx: mpsc::UnboundedSender<KeybindingEvent>,
     dispatcher: &Dispatcher,
   ) -> crate::Result<platform_impl::KeyboardHook> {
     platform_impl::KeyboardHook::new(
       move |event: platform_impl::KeyEvent| -> bool {
+        // Block the Windows key if configured (prevents Start menu).
+        if matches!(event.key, Key::LWin | Key::RWin | Key::Win)
+          && block_win_key.load(Ordering::Acquire)
+        {
+          return true;
+        }
+
         if !enabled.load(Ordering::Relaxed) || !event.is_keypress {
           return false;
         }

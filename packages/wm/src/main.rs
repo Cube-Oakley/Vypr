@@ -40,6 +40,8 @@ mod ipc_server;
 mod models;
 mod pending_sync;
 mod sys_tray;
+#[cfg(target_os = "windows")]
+mod taskbar;
 mod traits;
 mod user_config;
 mod wm;
@@ -166,6 +168,15 @@ async fn start_wm(
     dispatcher,
   )?;
 
+  // Hide the Windows taskbar and block the Windows key if configured.
+  #[cfg(target_os = "windows")]
+  let mut taskbar_manager = taskbar::TaskbarManager::new();
+  #[cfg(target_os = "windows")]
+  if config.value.general.hide_taskbar {
+    taskbar_manager.hide();
+    keybinding_listener.set_block_win_key(true);
+  }
+
   // Run user's startup commands.
   if let Err(err) = wm.process_commands(
     &config.value.general.startup_commands.clone(),
@@ -203,6 +214,11 @@ async fn start_wm(
       },
       Some(()) = display_listener.next_event() => {
         tracing::debug!("Received display settings changed event.");
+
+        // Re-hide taskbar if explorer.exe restarted.
+        #[cfg(target_os = "windows")]
+        taskbar_manager.reapply_if_hidden();
+
         wm.process_event(PlatformEvent::DisplaySettingsChanged, &mut config)
       },
       Some(event) = keybinding_listener.next_event() => {
@@ -288,6 +304,11 @@ async fn start_wm(
   }
 
   tracing::info!("Window manager shutting down.");
+
+  // Restore taskbar before cleanup so it's visible again.
+  #[cfg(target_os = "windows")]
+  taskbar_manager.restore();
+
   wm.cleanup(&mut config, &mut ipc_server);
 
   Ok(())

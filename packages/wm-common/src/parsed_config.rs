@@ -78,6 +78,10 @@ pub struct GeneralConfig {
   /// aspect ratio, creating a spiral layout pattern.
   pub dwindle_layout: bool,
 
+  /// Whether to hide the Windows taskbar, disable the Start menu,
+  /// and block the Windows key. The taskbar is restored on exit.
+  pub hide_taskbar: bool,
+
   /// Whether to automatically focus windows underneath the cursor.
   pub focus_follows_cursor: bool,
 
@@ -109,6 +113,7 @@ impl Default for GeneralConfig {
       cursor_jump: CursorJumpConfig::default(),
       dwindle_layout: false,
       focus_follows_cursor: false,
+      hide_taskbar: false,
       toggle_workspace_on_refocus: true,
       startup_commands: vec![],
       shutdown_commands: vec![],
