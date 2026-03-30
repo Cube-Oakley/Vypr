@@ -93,6 +93,11 @@ pub fn handle_alt_drag(
   let alt_down = state.dispatcher.is_alt_down();
   let left_down =
     state.dispatcher.is_mouse_down(&MouseButton::Left);
+  // Use the mouse hook's tracked state since the hook blocks
+  // WM_RBUTTONDOWN from reaching GetAsyncKeyState.
+  #[cfg(target_os = "windows")]
+  let right_down = wm_platform::AltClickMouseHook::is_rbutton_down();
+  #[cfg(not(target_os = "windows"))]
   let right_down =
     state.dispatcher.is_mouse_down(&MouseButton::Right);
 
