@@ -419,6 +419,42 @@ impl NativeWindow {
     Ok(())
   }
 
+  /// Defers a window position change into an `HDWP` batch.
+  ///
+  /// Returns the updated `HDWP` handle. All deferred changes are
+  /// applied atomically when `EndDeferWindowPos` is called.
+  pub(crate) fn defer_window_pos(
+    &self,
+    hdwp: windows::Win32::UI::WindowsAndMessaging::HDWP,
+    z_order: &WindowZOrder,
+    rect: &Rect,
+    flags: SET_WINDOW_POS_FLAGS,
+  ) -> crate::Result<windows::Win32::UI::WindowsAndMessaging::HDWP> {
+    use windows::Win32::UI::WindowsAndMessaging::DeferWindowPos;
+
+    let z_order_hwnd = match z_order {
+      WindowZOrder::TopMost => HWND_TOPMOST,
+      WindowZOrder::Top => HWND_TOP,
+      WindowZOrder::Normal => HWND_NOTOPMOST,
+      WindowZOrder::AfterWindow(window_id) => HWND(window_id.0),
+    };
+
+    let result = unsafe {
+      DeferWindowPos(
+        hdwp,
+        self.hwnd(),
+        z_order_hwnd,
+        rect.x(),
+        rect.y(),
+        rect.width(),
+        rect.height(),
+        flags,
+      )
+    }?;
+
+    Ok(result)
+  }
+
   /// Implements [`NativeWindowWindowsExt::show`].
   pub(crate) fn show(&self) -> crate::Result<()> {
     unsafe { ShowWindowAsync(self.hwnd(), SW_SHOWNA) }.ok()?;

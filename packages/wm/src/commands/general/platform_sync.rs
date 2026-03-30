@@ -229,6 +229,17 @@ fn redraw_containers(
   // Get monitors by their optimal hide corner.
   let monitors_by_hide_corner = state.monitors_by_hide_corner();
 
+  // Begin deferred window positioning to batch all SetWindowPos
+  // calls into a single DWM composition frame, eliminating screen
+  // tearing during layout changes.
+  #[cfg(target_os = "windows")]
+  let deferred_pos = std::cell::RefCell::new(unsafe {
+    windows::Win32::UI::WindowsAndMessaging::BeginDeferWindowPos(
+      windows_to_update.len() as i32,
+    )
+    .ok()
+  });
+
   for window in windows_to_update.iter().rev() {
     let should_bring_to_front = windows_to_bring_to_front.contains(window);
 
@@ -307,10 +318,26 @@ fn redraw_containers(
       DisplayState::Showing | DisplayState::Shown
     );
 
-    if let Err(err) =
-      reposition_window(window, *hide_corner, &z_order, is_visible, config)
+    #[cfg(target_os = "windows")]
     {
-      tracing::warn!("Failed to set window position: {}", err);
+      if let Err(err) = reposition_window(
+        window,
+        *hide_corner,
+        &z_order,
+        is_visible,
+        config,
+        &deferred_pos,
+      ) {
+        tracing::warn!("Failed to set window position: {}", err);
+      }
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+      if let Err(err) =
+        reposition_window(window, *hide_corner, &z_order, is_visible, config)
+      {
+        tracing::warn!("Failed to set window position: {}", err);
+      }
     }
 
     // Whether the window is either transitioning to or from fullscreen.
@@ -354,17 +381,52 @@ fn redraw_containers(
     }
   }
 
+  // Flush all deferred window positions in a single atomic update.
+  #[cfg(target_os = "windows")]
+  if let Some(hdwp) = deferred_pos.into_inner() {
+    unsafe {
+      let _ = windows::Win32::UI::WindowsAndMessaging::EndDeferWindowPos(
+        hdwp,
+      );
+    }
+  }
+
   Ok(())
 }
 
+#[cfg(not(target_os = "windows"))]
 fn reposition_window(
   window: &WindowContainer,
   hide_corner: HideCorner,
-  // LINT: `z_order` is only used on Windows.
+  #[allow(unused_variables)]
+  z_order: &WindowZOrder,
+  is_visible: bool,
+  config: &UserConfig,
+) -> anyhow::Result<()> {
+  reposition_window_inner(window, hide_corner, z_order, is_visible, config, &std::cell::RefCell::new(None))
+}
+
+#[cfg(target_os = "windows")]
+fn reposition_window(
+  window: &WindowContainer,
+  hide_corner: HideCorner,
+  z_order: &WindowZOrder,
+  is_visible: bool,
+  config: &UserConfig,
+  deferred_pos: &std::cell::RefCell<Option<wm_platform::HDWP>>,
+) -> anyhow::Result<()> {
+  reposition_window_inner(window, hide_corner, z_order, is_visible, config, deferred_pos)
+}
+
+fn reposition_window_inner(
+  window: &WindowContainer,
+  hide_corner: HideCorner,
   #[cfg_attr(not(target_os = "windows"), allow(unused_variables))]
   z_order: &WindowZOrder,
   is_visible: bool,
   config: &UserConfig,
+  #[cfg_attr(not(target_os = "windows"), allow(unused_variables))]
+  deferred_pos: &std::cell::RefCell<Option<wm_platform::HDWP>>,
 ) -> anyhow::Result<()> {
   let rect = window
     .to_rect()?
@@ -462,18 +524,19 @@ fn reposition_window(
             window.native().maximize()?;
           }
 
-          window.native().set_window_pos(z_order, &rect, swp_flags)?;
+          apply_position(window, z_order, &rect, swp_flags, deferred_pos)?;
         }
         _ => {
           swp_flags |= SWP_FRAMECHANGED;
 
-          window.native().set_window_pos(z_order, &rect, swp_flags)?;
+          apply_position(window, z_order, &rect, swp_flags, deferred_pos)?;
 
           // When there's a mismatch between the DPI of the monitor and the
           // window, the window might be sized incorrectly after the first
           // move. If we set the position twice, inconsistencies after the
           // first move are resolved.
           if window.has_pending_dpi_adjustment() {
+            // DPI adjustment can't be deferred — needs immediate feedback.
             window.native().set_window_pos(z_order, &rect, swp_flags)?;
           }
         }
@@ -577,6 +640,35 @@ fn apply_window_effects(
   {
     apply_transparency_effect(window, effect_config);
   }
+}
+
+/// Applies a window position change, using deferred positioning if
+/// an `HDWP` batch is active, or immediate `SetWindowPos` otherwise.
+#[cfg(target_os = "windows")]
+fn apply_position(
+  window: &WindowContainer,
+  z_order: &WindowZOrder,
+  rect: &Rect,
+  flags: wm_platform::SET_WINDOW_POS_FLAGS,
+  deferred_pos: &std::cell::RefCell<Option<wm_platform::HDWP>>,
+) -> anyhow::Result<()> {
+  let mut dp = deferred_pos.borrow_mut();
+
+  if let Some(hdwp) = dp.take() {
+    match window.native().defer_window_pos(hdwp, z_order, rect, flags) {
+      Ok(new_hdwp) => {
+        *dp = Some(new_hdwp);
+      }
+      Err(_) => {
+        // DeferWindowPos failed — fall back to immediate.
+        window.native().set_window_pos(z_order, rect, flags)?;
+      }
+    }
+  } else {
+    window.native().set_window_pos(z_order, rect, flags)?;
+  }
+
+  Ok(())
 }
 
 #[cfg(target_os = "windows")]
