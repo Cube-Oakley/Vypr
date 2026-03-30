@@ -598,28 +598,31 @@ fn apply_border_effect(
     return;
   }
 
-  if effect_config.border.is_gradient() {
-    // Disable DWM solid border when using gradient overlay.
-    _ = window.native().set_border_color(None);
+  // Hide overlay for windows on inactive workspaces.
+  let is_visible = matches!(
+    window.display_state(),
+    DisplayState::Shown | DisplayState::Showing
+  );
 
-    // Use the tiling tree's calculated rect instead of the OS frame.
-    // The OS frame may still reflect the pre-tiled position when
-    // SetWindowPos hasn't completed yet, which causes a flash of a
-    // giant overlay at the window's original size.
-    // For new overlays, use the tiling tree rect to prevent a flash
-    // at the pre-tiled window size (the OS frame may not have updated
-    // yet). For existing overlays, use the DWM frame for pixel-perfect
-    // alignment since the window has already settled.
+  if !is_visible {
+    overlay_manager.hide(handle, dispatcher);
+    return;
+  }
+
+  if effect_config.border.is_gradient() {
     let is_new = !overlay_manager.has_overlay(handle);
 
-    let frame_result = if is_new {
-      window.to_rect()
-    } else {
-      window.native().frame().map_err(Into::into)
-    };
+    // Only call DWM to disable solid border on first setup.
+    if is_new {
+      _ = window.native().set_border_color(None);
+    }
+
+    // For new overlays, use the tiling tree rect (prevents flash).
+    // For existing overlays, use the tiling rect too — it's fast
+    // (no DWM call) and accurate enough for position updates.
+    let frame_result = window.to_rect();
 
     if let Ok(frame) = frame_result {
-
       let colors = effect_config.border.effective_colors();
       if let Err(err) = overlay_manager.update(
         handle,

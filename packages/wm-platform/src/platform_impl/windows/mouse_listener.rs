@@ -217,13 +217,12 @@ impl MouseListener {
       return Ok(());
     }
 
-    // Throttle mouse move events so that there's a minimum of 50ms between
-    // each emission. State change events (button down/up) always get
-    // emitted.
+    // Throttle mouse move events to limit processing overhead.
+    // 16ms ≈ 60fps, keeping focus-follows-cursor responsive.
     let should_emit = match event_kind {
       MouseEventKind::Move => {
         callback_data.last_move_emission.is_none_or(|timestamp| {
-          timestamp.elapsed() >= Duration::from_millis(50)
+          timestamp.elapsed() >= Duration::from_millis(16)
         })
       }
       _ => true,
