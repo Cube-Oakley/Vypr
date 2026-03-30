@@ -169,10 +169,9 @@ async fn start_wm(
     dispatcher,
   )?;
 
-  // Block right-click from reaching windows when Alt is held
-  // (prevents terminal paste / context menus during alt-drag resize).
-  #[cfg(target_os = "windows")]
-  let _mouse_hook = wm_platform::AltClickMouseHook::new(dispatcher)?;
+  // No WH_MOUSE_LL hook — it causes input lag. Right-click
+  // passthrough during resize is handled by sending Escape to
+  // dismiss context menus after the drag starts.
 
   // Hide the Windows taskbar and block the Windows key if configured.
   #[cfg(target_os = "windows")]
