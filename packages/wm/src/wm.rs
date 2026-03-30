@@ -22,7 +22,8 @@ use crate::{
     },
     general::{
       cycle_focus, disable_binding_mode, enable_binding_mode,
-      platform_sync, reload_config, shell_exec, toggle_pause,
+      platform_sync, platform_sync_redraw_only,
+      reload_config, shell_exec, toggle_pause,
     },
     monitor::focus_monitor,
     window::{
@@ -106,18 +107,28 @@ impl WindowManager {
       }
       PlatformEvent::Mouse(event) => {
         // Try alt-drag first (Alt+Click move/resize).
+        let was_dragging = self.alt_drag.is_some();
+
         if handle_alt_drag::handle_alt_drag(
           &event,
           &mut self.state,
           config,
           &mut self.alt_drag,
         )? {
-          // Alt-drag consumed the event. Still run platform_sync
-          // for live visual feedback during resize.
           if !self.state.is_paused
             && self.state.pending_sync.has_changes()
           {
-            platform_sync(&mut self.state, config)?;
+            // If the drag just ended, run a full sync to update
+            // border overlays. During active drag, use the
+            // lightweight redraw-only sync for speed.
+            if was_dragging && self.alt_drag.is_none() {
+              platform_sync(&mut self.state, config)?;
+            } else {
+              platform_sync_redraw_only(
+                &mut self.state,
+                config,
+              )?;
+            }
           }
           return Ok(());
         }
