@@ -13,12 +13,13 @@ use windows::Win32::{
 
 use crate::Dispatcher;
 
-/// When true, an alt-drag resize is in progress and right-click
-/// events should be blocked from reaching windows.
-static RESIZE_ACTIVE: AtomicBool = AtomicBool::new(false);
+/// Tracks whether the right mouse button is physically held, even
+/// when the hook blocks the message from reaching windows.
+static RBUTTON_DOWN: AtomicBool = AtomicBool::new(false);
 
 /// A system-wide low-level mouse hook that blocks right-click events
-/// from reaching target windows during alt-drag resize.
+/// from reaching windows when Alt is held, while tracking the button
+/// state so `is_rbutton_down()` still works.
 #[derive(Debug)]
 pub struct AltClickMouseHook {
   handle: HHOOK,
@@ -43,10 +44,10 @@ impl AltClickMouseHook {
     })
   }
 
-  /// Sets whether alt-drag resize is currently active. When active,
-  /// right-click events are blocked from reaching windows.
-  pub fn set_resize_active(active: bool) {
-    RESIZE_ACTIVE.store(active, Ordering::Release);
+  /// Returns whether the right mouse button is currently held,
+  /// tracked by the hook even when messages are blocked.
+  pub fn is_rbutton_down() -> bool {
+    RBUTTON_DOWN.load(Ordering::Acquire)
   }
 
   /// Terminates the mouse hook.
@@ -55,7 +56,8 @@ impl AltClickMouseHook {
     Ok(())
   }
 
-  /// Hook procedure that intercepts right-click during active resize.
+  /// Hook procedure that blocks right-click when Alt is held and
+  /// tracks button state.
   extern "system" fn hook_proc(
     code: i32,
     wparam: WPARAM,
@@ -68,29 +70,29 @@ impl AltClickMouseHook {
     #[allow(clippy::cast_possible_truncation)]
     let msg = wparam.0 as u32;
 
-    // During active resize, block right-click from reaching windows.
-    if RESIZE_ACTIVE.load(Ordering::Acquire)
-      && (msg == WM_RBUTTONDOWN || msg == WM_RBUTTONUP)
+    // Track right button state regardless of blocking.
+    if msg == WM_RBUTTONDOWN {
+      RBUTTON_DOWN.store(true, Ordering::Release);
+    } else if msg == WM_RBUTTONUP {
+      RBUTTON_DOWN.store(false, Ordering::Release);
+    }
+
+    // Block right-click from reaching windows when Alt is held.
+    if (msg == WM_RBUTTONDOWN || msg == WM_RBUTTONUP)
+      && is_alt_down()
     {
       return LRESULT(1);
     }
 
-    // Block right-click when Alt is held and no resize is active yet
-    // (the initial click that starts the resize). Only block the UP
-    // event — the DOWN event needs to reach our raw input listener
-    // to start the drag.
-    if msg == WM_RBUTTONUP {
-      let alt_down = unsafe {
-        (GetKeyState(VK_LMENU.0.into()) & 0x80 == 0x80)
-          || (GetKeyState(VK_RMENU.0.into()) & 0x80 == 0x80)
-      };
-
-      if alt_down {
-        return LRESULT(1);
-      }
-    }
-
     unsafe { CallNextHookEx(None, code, wparam, lparam) }
+  }
+}
+
+/// Checks if Alt is currently held.
+fn is_alt_down() -> bool {
+  unsafe {
+    (GetKeyState(VK_LMENU.0.into()) & 0x80 == 0x80)
+      || (GetKeyState(VK_RMENU.0.into()) & 0x80 == 0x80)
   }
 }
 
