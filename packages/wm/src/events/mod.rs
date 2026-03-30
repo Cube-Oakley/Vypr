@@ -1,3 +1,4 @@
+pub mod handle_alt_drag;
 mod handle_display_settings_changed;
 mod handle_mouse_move;
 mod handle_window_destroyed;

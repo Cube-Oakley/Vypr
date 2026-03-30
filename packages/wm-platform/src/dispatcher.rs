@@ -575,6 +575,28 @@ impl Dispatcher {
     }
   }
 
+  /// Gets whether the Alt key is currently pressed.
+  #[must_use]
+  pub fn is_alt_down(&self) -> bool {
+    #[cfg(target_os = "macos")]
+    {
+      let pressed_mask = NSEvent::pressedMouseButtons();
+      // Option/Alt flag in NSEvent modifier flags.
+      false // TODO: macOS implementation.
+    }
+    #[cfg(target_os = "windows")]
+    {
+      use windows::Win32::UI::Input::KeyboardAndMouse::{
+        GetKeyState, VK_LMENU, VK_RMENU,
+      };
+
+      unsafe {
+        (GetKeyState(VK_LMENU.0.into()) & 0x80 == 0x80)
+          || (GetKeyState(VK_RMENU.0.into()) & 0x80 == 0x80)
+      }
+    }
+  }
+
   /// Gets whether the given mouse button is currently pressed.
   #[must_use]
   pub fn is_mouse_down(&self, button: &MouseButton) -> bool {

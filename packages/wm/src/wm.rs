@@ -36,7 +36,7 @@ use crate::{
     },
   },
   events::{
-    handle_display_settings_changed, handle_mouse_move,
+    handle_alt_drag, handle_display_settings_changed, handle_mouse_move,
     handle_window_destroyed, handle_window_focused, handle_window_hidden,
     handle_window_minimize_ended, handle_window_minimized,
     handle_window_moved_or_resized, handle_window_shown,
@@ -53,6 +53,8 @@ pub struct WindowManager {
   pub event_rx: mpsc::UnboundedReceiver<WmEvent>,
   pub exit_rx: mpsc::UnboundedReceiver<()>,
   pub state: WmState,
+  /// Active alt-drag state (move or resize).
+  alt_drag: Option<handle_alt_drag::AltDragState>,
 }
 
 impl WindowManager {
@@ -70,6 +72,7 @@ impl WindowManager {
       event_rx,
       exit_rx,
       state,
+      alt_drag: None,
     })
   }
 
@@ -78,11 +81,9 @@ impl WindowManager {
     event: PlatformEvent,
     config: &mut UserConfig,
   ) -> anyhow::Result<()> {
-    let state = &mut self.state;
-
     match event {
       PlatformEvent::DisplaySettingsChanged => {
-        handle_display_settings_changed(state, config)
+        handle_display_settings_changed(&mut self.state, config)
       }
       PlatformEvent::Keybinding(keybinding_event) => {
         // Find the keybinding config that matches this keybinding.
@@ -104,17 +105,34 @@ impl WindowManager {
         return Ok(());
       }
       PlatformEvent::Mouse(event) => {
-        handle_mouse_move(&event, state, config)
+        // Try alt-drag first (Alt+Click move/resize).
+        if handle_alt_drag::handle_alt_drag(
+          &event,
+          &mut self.state,
+          config,
+          &mut self.alt_drag,
+        )? {
+          // Alt-drag consumed the event. Still run platform_sync
+          // for live visual feedback during resize.
+          if !self.state.is_paused
+            && self.state.pending_sync.has_changes()
+          {
+            platform_sync(&mut self.state, config)?;
+          }
+          return Ok(());
+        }
+
+        handle_mouse_move(&event, &mut self.state, config)
       }
       PlatformEvent::Window(window_event) => match window_event {
         WindowEvent::Focused { window, .. } => {
-          handle_window_focused(&window, state, config)
+          handle_window_focused(&window, &mut self.state, config)
         }
         WindowEvent::Shown { window, .. } => {
-          handle_window_shown(window, state, config)
+          handle_window_shown(window, &mut self.state, config)
         }
         WindowEvent::Hidden { window, .. } => {
-          handle_window_hidden(&window, state, config)
+          handle_window_hidden(&window, &mut self.state, config)
         }
         WindowEvent::MovedOrResized {
           window,
@@ -125,26 +143,26 @@ impl WindowManager {
           &window,
           is_interactive_start,
           is_interactive_end,
-          state,
+          &mut self.state,
           config,
         ),
         WindowEvent::Minimized { window, .. } => {
-          handle_window_minimized(&window, state, config)
+          handle_window_minimized(&window, &mut self.state, config)
         }
         WindowEvent::MinimizeEnded { window, .. } => {
-          handle_window_minimize_ended(&window, state, config)
+          handle_window_minimize_ended(&window, &mut self.state, config)
         }
         WindowEvent::TitleChanged { window, .. } => {
-          handle_window_title_changed(&window, state, config)
+          handle_window_title_changed(&window, &mut self.state, config)
         }
         WindowEvent::Destroyed { window_id, .. } => {
-          handle_window_destroyed(window_id, state)
+          handle_window_destroyed(window_id, &mut self.state)
         }
       },
     }?;
 
-    if !state.is_paused && state.pending_sync.has_changes() {
-      platform_sync(state, config)?;
+    if !self.state.is_paused && self.state.pending_sync.has_changes() {
+      platform_sync(&mut self.state, config)?;
     }
 
     Ok(())
