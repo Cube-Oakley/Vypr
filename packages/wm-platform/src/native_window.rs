@@ -297,6 +297,13 @@ pub trait NativeWindowWindowsExt {
   /// This method is only available on Windows.
   fn set_title_bar_visibility(&self, visible: bool) -> crate::Result<()>;
 
+  /// Enables or disables acrylic blur behind the window.
+  fn set_blur_behind(
+    &self,
+    enabled: bool,
+    tint_color: u32,
+  ) -> crate::Result<()>;
+
   /// Sets the color of the window's border.
   ///
   /// # Platform-specific
@@ -422,6 +429,14 @@ impl NativeWindowWindowsExt for NativeWindow {
 
   fn set_title_bar_visibility(&self, visible: bool) -> crate::Result<()> {
     self.inner.set_title_bar_visibility(visible)
+  }
+
+  fn set_blur_behind(
+    &self,
+    enabled: bool,
+    tint_color: u32,
+  ) -> crate::Result<()> {
+    self.inner.set_blur_behind(enabled, tint_color)
   }
 
   fn set_border_color(&self, color: Option<&Color>) -> crate::Result<()> {

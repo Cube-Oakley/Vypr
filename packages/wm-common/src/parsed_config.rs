@@ -356,6 +356,10 @@ pub struct TransparencyEffectConfig {
 
   /// The opacity to apply.
   pub opacity: OpacityValue,
+
+  /// Whether to apply acrylic blur behind the window.
+  #[serde(default)]
+  pub blur: bool,
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
