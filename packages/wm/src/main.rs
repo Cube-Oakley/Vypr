@@ -152,13 +152,12 @@ async fn start_wm(
   // Start listening for platform events after populating initial state.
   let mut window_listener = WindowListener::new(dispatcher)?;
   let mut display_listener = DisplayListener::new(dispatcher)?;
+  // Move events are always needed for alt-drag and focus-follows-
+  // cursor. LeftButtonUp is needed for move-drag end detection.
   let mut mouse_listener = MouseListener::new(
     &[
       MouseEventKind::Move,
-      MouseEventKind::LeftButtonDown,
       MouseEventKind::LeftButtonUp,
-      MouseEventKind::RightButtonDown,
-      MouseEventKind::RightButtonUp,
     ],
     dispatcher,
   )?;
@@ -207,7 +206,6 @@ async fn start_wm(
         break;
       },
       Some(event) = mouse_listener.next_event() => {
-        tracing::debug!("Received mouse event: {:?}", event);
         wm.process_event(PlatformEvent::Mouse(event), &mut config)
       },
       Some(event) = window_listener.next_event() => {
@@ -278,10 +276,7 @@ async fn start_wm(
           mouse_listener.set_enabled_events(
             &[
               MouseEventKind::Move,
-              MouseEventKind::LeftButtonDown,
               MouseEventKind::LeftButtonUp,
-              MouseEventKind::RightButtonDown,
-              MouseEventKind::RightButtonUp,
             ],
           )?;
         }

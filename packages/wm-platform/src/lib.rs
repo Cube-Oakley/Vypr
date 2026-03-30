@@ -34,6 +34,9 @@ pub use window_listener::*;
 #[cfg(target_os = "windows")]
 pub type BorderOverlayManager =
   platform_impl::border_overlay::BorderOverlayManager;
+#[cfg(target_os = "windows")]
+pub type AltClickMouseHook =
+  platform_impl::mouse_hook::AltClickMouseHook;
 // TODO: Avoid exposing `windows` crate types in the public API.
 #[cfg(target_os = "windows")]
 pub use windows::Win32::UI::WindowsAndMessaging::{
