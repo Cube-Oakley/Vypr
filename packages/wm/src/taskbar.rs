@@ -142,8 +142,9 @@ fn show_all_secondary_taskbars() {
   for_each_secondary_taskbar(SW_SHOW.0);
 }
 
-/// Static helper for the watcher process to restore the taskbar
-/// without needing a `TaskbarManager` instance.
+/// Static helper to restore the taskbar without needing a
+/// `TaskbarManager` instance.
+#[allow(dead_code)]
 pub fn restore_taskbar() {
   if let Some(hwnd) = find_window(w!("Shell_TrayWnd")) {
     unsafe {

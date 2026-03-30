@@ -9,7 +9,7 @@ mod native_window;
 mod single_instance;
 mod window_listener;
 
-pub(crate) use border_overlay::*;
+// BorderOverlayManager is re-exported via a type alias in lib.rs.
 pub(crate) use display::*;
 pub(crate) use display_listener::*;
 pub(crate) use event_loop::*;

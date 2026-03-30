@@ -153,11 +153,13 @@ async fn start_wm(
   let mut window_listener = WindowListener::new(dispatcher)?;
   let mut display_listener = DisplayListener::new(dispatcher)?;
   let mut mouse_listener = MouseListener::new(
-    if config.value.general.focus_follows_cursor {
-      &[MouseEventKind::Move, MouseEventKind::LeftButtonUp]
-    } else {
-      &[MouseEventKind::LeftButtonUp]
-    },
+    &[
+      MouseEventKind::Move,
+      MouseEventKind::LeftButtonDown,
+      MouseEventKind::LeftButtonUp,
+      MouseEventKind::RightButtonDown,
+      MouseEventKind::RightButtonUp,
+    ],
     dispatcher,
   )?;
   let mut keybinding_listener = KeybindingListener::new(
@@ -274,11 +276,13 @@ async fn start_wm(
           );
 
           mouse_listener.set_enabled_events(
-            if config.value.general.focus_follows_cursor {
-              &[MouseEventKind::Move, MouseEventKind::LeftButtonUp]
-            } else {
-              &[MouseEventKind::LeftButtonUp]
-            },
+            &[
+              MouseEventKind::Move,
+              MouseEventKind::LeftButtonDown,
+              MouseEventKind::LeftButtonUp,
+              MouseEventKind::RightButtonDown,
+              MouseEventKind::RightButtonUp,
+            ],
           )?;
         }
 
