@@ -718,6 +718,94 @@ impl NativeWindow {
     Ok(())
   }
 
+  /// Enables or disables acrylic blur behind the window using the
+  /// undocumented `SetWindowCompositionAttribute` API.
+  ///
+  /// `tint_color` is an ABGR u32 that controls the blur tint.
+  pub(crate) fn set_blur_behind(
+    &self,
+    enabled: bool,
+    tint_color: u32,
+  ) -> crate::Result<()> {
+    // Accent policy struct (undocumented).
+    #[repr(C)]
+    struct AccentPolicy {
+      accent_state: u32,
+      accent_flags: u32,
+      gradient_color: u32,
+      animation_id: u32,
+    }
+
+    // Composition attribute data (undocumented).
+    #[repr(C)]
+    struct WindowCompositionAttribData {
+      attrib: u32,
+      data: *mut AccentPolicy,
+      data_size: usize,
+    }
+
+    type SwcaFn = unsafe extern "system" fn(
+      windows::Win32::Foundation::HWND,
+      *mut WindowCompositionAttribData,
+    ) -> i32;
+
+    // Cache the function pointer — loading from user32.dll is
+    // expensive and this is called on every focus change.
+    static SWCA: std::sync::OnceLock<Option<SwcaFn>> =
+      std::sync::OnceLock::new();
+
+    let func = SWCA.get_or_init(|| {
+      use windows::Win32::System::LibraryLoader::{
+        GetModuleHandleW, GetProcAddress,
+      };
+      use windows::core::w;
+
+      let module =
+        unsafe { GetModuleHandleW(w!("user32.dll")) }.ok()?;
+      let proc = unsafe {
+        GetProcAddress(
+          module,
+          windows::core::s!("SetWindowCompositionAttribute"),
+        )
+      }?;
+
+      Some(unsafe { std::mem::transmute(proc) })
+    });
+
+    let Some(func) = func else {
+      return Err(crate::Error::Platform(
+        "SetWindowCompositionAttribute not available.".to_string(),
+      ));
+    };
+
+    const ACCENT_DISABLED: u32 = 0;
+    const ACCENT_ENABLE_ACRYLICBLURBEHIND: u32 = 4;
+    const WCA_ACCENT_POLICY: u32 = 19;
+
+    let mut policy = AccentPolicy {
+      accent_state: if enabled {
+        ACCENT_ENABLE_ACRYLICBLURBEHIND
+      } else {
+        ACCENT_DISABLED
+      },
+      accent_flags: 2,
+      gradient_color: tint_color,
+      animation_id: 0,
+    };
+
+    let mut data = WindowCompositionAttribData {
+      attrib: WCA_ACCENT_POLICY,
+      data: &raw mut policy,
+      data_size: std::mem::size_of::<AccentPolicy>(),
+    };
+
+    unsafe {
+      func(self.hwnd(), &raw mut data);
+    }
+
+    Ok(())
+  }
+
   /// Implements [`NativeWindowWindowsExt::adjust_transparency`].
   pub(crate) fn adjust_transparency(
     &self,

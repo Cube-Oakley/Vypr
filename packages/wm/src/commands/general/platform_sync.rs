@@ -115,6 +115,38 @@ pub fn platform_sync(
     }
   }
 
+  // Apply expensive effects (blur, uniform transparency) only on
+  // initial setup and config reload, not on every focus change.
+  #[cfg(target_os = "windows")]
+  if state.pending_sync.needs_all_effects_update() {
+    let effects = &config.value.window_effects;
+
+    for window in state.windows() {
+      // Apply blur if enabled on either focused or unfocused.
+      if effects.focused_window.transparency.blur
+        || effects.other_windows.transparency.blur
+      {
+        let tint: u32 = 0x80_20_20_20;
+        let _ = window.native().set_blur_behind(true, tint);
+      }
+
+      // Apply uniform transparency (same opacity for both states).
+      let focused_alpha =
+        effects.focused_window.transparency.opacity.to_alpha();
+      let other_alpha =
+        effects.other_windows.transparency.opacity.to_alpha();
+
+      if (effects.focused_window.transparency.enabled
+        || effects.other_windows.transparency.enabled)
+        && focused_alpha == other_alpha
+      {
+        let _ = window.native().set_transparency(
+          &effects.focused_window.transparency.opacity,
+        );
+      }
+    }
+  }
+
   state.pending_sync.clear();
 
   Ok(())
@@ -662,11 +694,22 @@ fn apply_window_effects(
     apply_corner_effect(window, effect_config);
   }
 
+  // Transparency is applied per-focus-change only if focused and
+  // unfocused opacities differ. If they're the same, it's applied
+  // once during init/config reload (see below in platform_sync).
   #[cfg(target_os = "windows")]
-  if window_effects.focused_window.transparency.enabled
-    || window_effects.other_windows.transparency.enabled
   {
-    apply_transparency_effect(window, effect_config);
+    let focused_alpha =
+      window_effects.focused_window.transparency.opacity.to_alpha();
+    let other_alpha =
+      window_effects.other_windows.transparency.opacity.to_alpha();
+
+    if (window_effects.focused_window.transparency.enabled
+      || window_effects.other_windows.transparency.enabled)
+      && focused_alpha != other_alpha
+    {
+      apply_transparency_effect(window, effect_config);
+    }
   }
 }
 
@@ -813,4 +856,7 @@ fn apply_transparency_effect(
   };
 
   _ = window.native().set_transparency(transparency);
+
+  // Acrylic blur is applied separately in apply_blur_effect to
+  // avoid redundant DWM calls on every focus change.
 }
