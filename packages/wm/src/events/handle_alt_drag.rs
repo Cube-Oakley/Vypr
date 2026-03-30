@@ -93,11 +93,6 @@ pub fn handle_alt_drag(
   let alt_down = state.dispatcher.is_alt_down();
   let left_down =
     state.dispatcher.is_mouse_down(&MouseButton::Left);
-  // Use the mouse hook's tracked state since the hook blocks
-  // WM_RBUTTONDOWN from reaching GetAsyncKeyState.
-  #[cfg(target_os = "windows")]
-  let right_down = wm_platform::AltClickMouseHook::is_rbutton_down();
-  #[cfg(not(target_os = "windows"))]
   let right_down =
     state.dispatcher.is_mouse_down(&MouseButton::Right);
 
@@ -280,6 +275,41 @@ fn start_resize_drag(
     resize_edge: h_edge,
     resize_edge_v: v_edge,
   });
+
+  // Dismiss any context menu or right-click action that the initial
+  // WM_RBUTTONDOWN caused in the target window. This is a no-hook
+  // alternative to WH_MOUSE_LL blocking.
+  #[cfg(target_os = "windows")]
+  {
+    use windows::Win32::UI::Input::KeyboardAndMouse::{
+      SendInput, INPUT, INPUT_KEYBOARD, KEYBDINPUT,
+      KEYEVENTF_KEYUP, VK_ESCAPE,
+    };
+
+    let inputs = [
+      INPUT {
+        r#type: INPUT_KEYBOARD,
+        Anonymous: windows::Win32::UI::Input::KeyboardAndMouse::INPUT_0 {
+          ki: KEYBDINPUT {
+            wVk: VK_ESCAPE,
+            ..Default::default()
+          },
+        },
+      },
+      INPUT {
+        r#type: INPUT_KEYBOARD,
+        Anonymous: windows::Win32::UI::Input::KeyboardAndMouse::INPUT_0 {
+          ki: KEYBDINPUT {
+            wVk: VK_ESCAPE,
+            dwFlags: KEYEVENTF_KEYUP,
+            ..Default::default()
+          },
+        },
+      },
+    ];
+
+    unsafe { SendInput(&inputs, size_of::<INPUT>() as i32) };
+  }
 
   Ok(true)
 }
