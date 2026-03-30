@@ -53,11 +53,6 @@ pub struct AltDragState {
 
   /// Which vertical edge is being resized (top/bottom).
   pub resize_edge_v: ResizeEdge,
-
-  /// Mouse hook that blocks right-click during resize (installed
-  /// only while a resize drag is active to avoid system-wide lag).
-  #[cfg(target_os = "windows")]
-  pub mouse_hook: Option<wm_platform::AltClickMouseHook>,
 }
 
 /// Handles a mouse event during an alt-drag operation. Returns `true`
@@ -187,7 +182,7 @@ fn handle_drag_start(
       start_move_drag(position, &window, state, config, alt_drag)
     }
     MouseButton::Right => {
-      start_resize_drag(position, &window, state, alt_drag)
+      start_resize_drag(position, &window, alt_drag)
     }
   }
 }
@@ -244,8 +239,6 @@ fn start_move_drag(
     last_cursor: position.clone(),
     resize_edge: ResizeEdge::End,
     resize_edge_v: ResizeEdge::End,
-    #[cfg(target_os = "windows")]
-    mouse_hook: None,
   });
 
   Ok(true)
@@ -256,7 +249,6 @@ fn start_move_drag(
 fn start_resize_drag(
   position: &Point,
   window: &WindowContainer,
-  state: &WmState,
   alt_drag: &mut Option<AltDragState>,
 ) -> anyhow::Result<bool> {
   // Only resize tiling windows.
@@ -279,11 +271,6 @@ fn start_resize_drag(
     ResizeEdge::End
   };
 
-  // Install right-click blocking hook only during resize.
-  #[cfg(target_os = "windows")]
-  let mouse_hook =
-    wm_platform::AltClickMouseHook::new(&state.dispatcher).ok();
-
   *alt_drag = Some(AltDragState {
     window_id: window.id(),
     operation: ActiveDragOperation::Resize,
@@ -292,8 +279,6 @@ fn start_resize_drag(
     last_cursor: position.clone(),
     resize_edge: h_edge,
     resize_edge_v: v_edge,
-    #[cfg(target_os = "windows")]
-    mouse_hook,
   });
 
   Ok(true)
