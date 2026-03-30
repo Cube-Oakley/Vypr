@@ -127,10 +127,11 @@ impl BorderOverlayManager {
     })?;
 
     if size_changed || needs_create {
-      // Render and position on the event loop thread.
+      // Render and position on the event loop thread (async to
+      // avoid blocking the WM thread during focus changes).
       let overlay_h_copy = state.handle;
       let colors = colors.to_vec();
-      dispatcher.dispatch_sync(move || {
+      dispatcher.dispatch_async(move || {
         let hwnd = HWND(overlay_h_copy);
         if let Err(e) = render_gradient(
           hwnd, overlay_x, overlay_y, overlay_w, overlay_h, bw, &colors,
@@ -156,9 +157,9 @@ impl BorderOverlayManager {
       state.width = overlay_w;
       state.height = overlay_h;
     } else {
-      // Position-only update on the event loop thread.
+      // Position-only update (async).
       let overlay_h_copy = state.handle;
-      dispatcher.dispatch_sync(move || {
+      dispatcher.dispatch_async(move || {
         // SAFETY: Repositioning an existing overlay window.
         unsafe {
           let _ = SetWindowPos(
@@ -185,7 +186,7 @@ impl BorderOverlayManager {
   ) {
     if let Some(state) = self.overlays.remove(&target_handle) {
       let h = state.handle;
-      let _ = dispatcher.dispatch_sync(move || {
+      let _ = dispatcher.dispatch_async(move || {
         // SAFETY: Destroying a window we created.
         unsafe {
           let _ = DestroyWindow(HWND(h));
@@ -210,7 +211,7 @@ impl BorderOverlayManager {
   ) {
     if let Some(state) = self.overlays.get(&target_handle) {
       let h = state.handle;
-      let _ = dispatcher.dispatch_sync(move || {
+      let _ = dispatcher.dispatch_async(move || {
         // SAFETY: Hiding a window we created.
         unsafe {
           let _ = ShowWindow(HWND(h), SW_HIDE);
@@ -227,7 +228,7 @@ impl BorderOverlayManager {
   ) {
     if let Some(state) = self.overlays.get(&target_handle) {
       let h = state.handle;
-      let _ = dispatcher.dispatch_sync(move || {
+      let _ = dispatcher.dispatch_async(move || {
         // SAFETY: Showing a window we created.
         unsafe {
           let _ = ShowWindow(HWND(h), SW_SHOWNOACTIVATE);
