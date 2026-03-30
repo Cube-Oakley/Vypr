@@ -211,6 +211,16 @@ pub trait NativeWindowWindowsExt {
     flags: SET_WINDOW_POS_FLAGS,
   ) -> crate::Result<()>;
 
+  /// Defers a window position change into an `HDWP` batch for
+  /// atomic multi-window updates.
+  fn defer_window_pos(
+    &self,
+    hdwp: windows::Win32::UI::WindowsAndMessaging::HDWP,
+    z_order: &WindowZOrder,
+    rect: &Rect,
+    flags: SET_WINDOW_POS_FLAGS,
+  ) -> crate::Result<windows::Win32::UI::WindowsAndMessaging::HDWP>;
+
   /// Shows the window asynchronously.
   ///
   /// NOTE: Cloaked windows do not get shown until uncloaked.
@@ -366,6 +376,16 @@ impl NativeWindowWindowsExt for NativeWindow {
     flags: SET_WINDOW_POS_FLAGS,
   ) -> crate::Result<()> {
     self.inner.set_window_pos(z_order, rect, flags)
+  }
+
+  fn defer_window_pos(
+    &self,
+    hdwp: windows::Win32::UI::WindowsAndMessaging::HDWP,
+    z_order: &WindowZOrder,
+    rect: &Rect,
+    flags: SET_WINDOW_POS_FLAGS,
+  ) -> crate::Result<windows::Win32::UI::WindowsAndMessaging::HDWP> {
+    self.inner.defer_window_pos(hdwp, z_order, rect, flags)
   }
 
   fn show(&self) -> crate::Result<()> {
