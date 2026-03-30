@@ -505,6 +505,26 @@ fn handle_drag_end(
     }
   }
 
+  // Re-focus the window under the cursor so borders and focus
+  // update correctly after the drag.
+  if let Ok(cursor_pos) = state.dispatcher.cursor_position() {
+    if let Ok(Some(native)) =
+      state.dispatcher.window_from_point(&cursor_pos)
+    {
+      if let Some(w) = state.window_from_native(&native) {
+        use crate::commands::container::set_focused_descendant;
+        set_focused_descendant(&w.into(), None);
+      }
+    }
+  }
+
+  state.pending_sync.queue_focus_change();
+  state.pending_sync.queue_all_effects_update();
+
+  // Run a full platform_sync immediately so updates are visible
+  // even if the mouse doesn't move after release.
+  crate::commands::general::platform_sync(state, config)?;
+
   Ok(true)
 }
 

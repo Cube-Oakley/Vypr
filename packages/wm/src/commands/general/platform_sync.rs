@@ -18,6 +18,26 @@ use crate::{
   wm_state::WmState,
 };
 
+/// Lightweight sync that only redraws containers without updating
+/// window effects (border overlays). Used during alt-drag resize
+/// for maximum responsiveness.
+pub fn platform_sync_redraw_only(
+  state: &mut WmState,
+  config: &UserConfig,
+) -> anyhow::Result<()> {
+  let focused_container =
+    state.focused_container().context("No focused container.")?;
+
+  if !state.pending_sync.containers_to_redraw().is_empty()
+    || !state.pending_sync.workspaces_to_reorder().is_empty()
+  {
+    redraw_containers(&focused_container, state, config)?;
+  }
+
+  state.pending_sync.clear();
+  Ok(())
+}
+
 pub fn platform_sync(
   state: &mut WmState,
   config: &UserConfig,
@@ -527,7 +547,15 @@ fn reposition_window_inner(
           apply_position(window, z_order, &rect, swp_flags, deferred_pos)?;
         }
         _ => {
-          swp_flags |= SWP_FRAMECHANGED;
+          // Only add SWP_FRAMECHANGED on initial positioning (when
+          // display state is transitioning). During resize redraws,
+          // skipping it avoids expensive frame recalculation.
+          if matches!(
+            window.display_state(),
+            DisplayState::Showing | DisplayState::Hiding
+          ) {
+            swp_flags |= SWP_FRAMECHANGED;
+          }
 
           apply_position(window, z_order, &rect, swp_flags, deferred_pos)?;
 
