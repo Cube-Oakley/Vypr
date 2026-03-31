@@ -1,6 +1,6 @@
 <div align="center">
   <br>
-  <img src="./resources/assets/logo.svg" width="230" alt="Vypr logo" />
+  <img src="./resources/assets/logo.png" width="350" alt="Vypr logo" />
   <br>
 
 # Vypr
