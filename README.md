@@ -1,97 +1,75 @@
 <div align="center">
-
-> V3 is finally out - check out the changelog [here](https://github.com/OWNER/vypr/releases) 🔥
-
   <br>
   <img src="./resources/assets/logo.svg" width="230" alt="Vypr logo" />
   <br>
 
 # Vypr
 
-**A tiling window manager for Windows inspired by i3wm.**
+**A tiling window manager for Windows, forked from [GlazeWM](https://github.com/glzr-io/glazewm).**
 
-[![Discord invite][discord-badge]][discord-link]
-[![Downloads][downloads-badge]][downloads-link]
-[![Good first issues][issues-badge]][issues-link]
-
-Vypr lets you easily organize windows and adjust their layout on the fly by using keyboard-driven commands.
-
-[Installation](#installation) •
-[Default keybindings](#default-keybindings) •
-[Config documentation](#config-documentation) •
-[FAQ](#faq) •
-[Contributing ↗](https://github.com/OWNER/vypr/blob/main/CONTRIBUTING.md)
+Vypr builds on GlazeWM's solid foundation with new features focused on a smoother, more polished desktop experience — including alt-drag window management, acrylic blur effects, gradient borders, dwindle auto-tiling, and more.
 
 ![Demo video][demo-video]
 
 </div>
 
-### 🌟 Key features
+## What's new in Vypr
 
-- Simple YAML configuration
-- Multi-monitor support
-- Customizable rules for specific windows
-- Easy one-click installation
-- Integration with [Zebar](https://github.com/glzr-io/zebar) as a status bar
+Vypr extends GlazeWM with the following features, all built from scratch:
+
+- **Dwindle auto-tiling** — Automatically tiles windows in a dwindle (spiral) layout, similar to Hyprland.
+- **Alt+drag move & resize** — Move windows with `Alt+LMB` and resize with `Alt+RMB`, inspired by Linux window managers. Includes edge snapping and proper floating/tiling integration.
+- **Acrylic blur & transparency** — Apply Windows acrylic blur and adjustable transparency to windows for a modern, polished look.
+- **Gradient border overlays** — Multi-color gradient borders drawn as lightweight overlay windows, replacing the flat single-color borders from GlazeWM.
+- **Taskbar auto-hide** — Automatically hides the Windows taskbar and blocks the Windows key from pulling it back up, keeping your workspace clean.
+- **Performance optimizations** — Batched window positioning via `DeferWindowPos`, elimination of low-level mouse hooks that caused input lag, and smoother resize handling.
+
+## Where we're heading
+
+Vypr's goal is to be a fast, opinionated tiling WM for Windows that feels as natural as the Linux alternatives. Planned areas of focus include:
+
+- More automatic tiling layouts (master-stack, grid, etc.)
+- Richer window effects and animations
+- Better multi-monitor ergonomics
+- First-class support for ultra-wide and mixed-DPI setups
 
 ## Installation
 
-**The latest version of Vypr is downloadable via [releases](https://github.com/OWNER/vypr/releases).** Zebar can optionally be installed as well via a checkbox during installation.
-
-Vypr is also available through several package managers:
-
-**Winget**
+Vypr is not yet available through package managers. To build from source:
 
 ```sh
-winget install Vypr
+git clone https://github.com/Cube-Oakley/Vypr.git
+cd Vypr
+cargo build --release
 ```
 
-**Chocolatey**
-
-```sh
-choco install vypr
-```
-
-**Scoop**
-
-```sh
-scoop bucket add extras
-scoop install extras/vypr
-```
-
-## Contributing
-
-Help fix something that annoys you, or add a feature you've been wanting for a long time! Contributions are very welcome.
-
-Local development and guidelines are available in the [contributing guide](https://github.com/OWNER/vypr/blob/main/CONTRIBUTING.md).
+The built binary will be at `target/release/vypr.exe`.
 
 ## Default keybindings
 
-On the first launch of Vypr, a default configuration can optionally be generated.
+On first launch, a default configuration can optionally be generated.
 
 Below is a cheat sheet of all available commands and their default keybindings.
 
 ![Infographic](/resources/assets/cheatsheet.png)
 
-## Config documentation
+## Configuration
 
-The [default config](https://github.com/OWNER/vypr/blob/main/resources/assets/sample-config.yaml) file is generated at `%userprofile%\.vypr\config.yaml`.
+The default config file is generated at `%userprofile%\.vypr\config.yaml`.
 
-To use a different config file location, you can launch the Vypr executable with the CLI argument `--config="..."`, like so:
+To use a different config file location, launch with the `--config` flag:
 
 ```sh
 vypr.exe start --config="C:\<PATH_TO_CONFIG>\config.yaml"
 ```
 
-Or pass a value for the `VYPR_CONFIG_PATH` environment variable:
+Or set the `VYPR_CONFIG_PATH` environment variable:
 
 ```sh
 setx VYPR_CONFIG_PATH "C:\<PATH_TO_CONFIG>\config.yaml"
 ```
 
-With the benefit of using a custom path being that you can choose a different name for the config file, such as `config.yaml`.
-
-### Config: General
+### General
 
 ```yaml
 general:
@@ -122,7 +100,7 @@ general:
     trigger: "monitor_focus"
 ```
 
-### Config: Keybindings
+### Keybindings
 
 The available keyboard shortcuts can be customized via the `keybindings` option. A keybinding consists of one or more key combinations and one or more commands to run when pressed.
 
@@ -130,22 +108,16 @@ It's recommended to use the alt key for keybindings. The Windows key is unfortun
 
 ```yaml
 keybindings:
-  # Command(s) to run.
   - commands: ["focus --workspace 1"]
-
-    # Key combination(s) to trigger the keybinding.
     bindings: ["alt+1"]
 
-  # Multiple commands can be run in a sequence (e.g. to move a window to a
-  # workspace + focus workspace).
+  # Multiple commands can be run in a sequence.
   - commands: ["move --workspace 1", "focus --workspace 1"]
     bindings: ["alt+shift+1"]
 ```
 
-**Full list of keys that can be used for keybindings:**
-
 <details>
-<summary>Keys list</summary>
+<summary>Full list of supported keys</summary>
 
 | Key                   | Description                                                               |
 | --------------------- | ------------------------------------------------------------------------- |
@@ -162,17 +134,17 @@ keybindings:
 | `alt`                 | Either left or right ALT key                                              |
 | `lalt`                | The left ALT key                                                          |
 | `ralt`                | The right ALT key                                                         |
-| `lwin`                | The left ⊞ Windows logo key                                               |
-| `rwin`                | The right ⊞ Windows logo key                                              |
+| `lwin`                | The left Windows logo key                                                 |
+| `rwin`                | The right Windows logo key                                                |
 | `space`               | The spacebar key                                                          |
 | `escape`              | The ESCAPE key                                                            |
 | `back`                | The BACKSPACE key                                                         |
 | `tab`                 | The TAB key                                                               |
 | `enter`               | The ENTER key                                                             |
-| `left`                | The ← arrow key                                                           |
-| `right`               | The → arrow key                                                           |
-| `up`                  | The ↑ arrow key                                                           |
-| `down`                | The ↓ arrow key                                                           |
+| `left`                | The left arrow key                                                        |
+| `right`               | The right arrow key                                                       |
+| `up`                  | The up arrow key                                                          |
+| `down`                | The down arrow key                                                        |
 | `num_lock`            | The NUM LOCK key                                                          |
 | `scroll_lock`         | The SCROLL LOCK key                                                       |
 | `caps_lock`           | The CAPS LOCK key                                                         |
@@ -183,11 +155,11 @@ keybindings:
 | `end`                 | The END key                                                               |
 | `home`                | The HOME key                                                              |
 | `print_screen`        | The PRINT SCREEN key                                                      |
-| `multiply`            | The `*` key (only on numpad)                                              |
-| `add`                 | The `+` key (only on numpad)                                              |
-| `subtract`            | The `-` key (only on numpad)                                              |
-| `decimal`             | The DEL key (only on numpad)                                              |
-| `divide`              | The `/` key (only on numpad)                                              |
+| `multiply`            | The `*` key (numpad only)                                                 |
+| `add`                 | The `+` key (numpad only)                                                 |
+| `subtract`            | The `-` key (numpad only)                                                 |
+| `decimal`             | The DEL key (numpad only)                                                 |
+| `divide`              | The `/` key (numpad only)                                                 |
 | `volume_up`           | The volume up key                                                         |
 | `volume_down`         | The volume down key                                                       |
 | `volume_mute`         | The volume mute key                                                       |
@@ -195,31 +167,25 @@ keybindings:
 | `media_prev_track`    | The media prev track key                                                  |
 | `media_stop`          | The media stop key                                                        |
 | `media_play_pause`    | The media play/pause key                                                  |
-| `oem_semicolon`       | The `;`/`:` key on a US standard keyboard (varies by keyboard)            |
-| `oem_question`        | The `/`/`?` key on a US standard keyboard (varies by keyboard)            |
-| `oem_tilde`           | The `` ` ``/`~` key on a US standard keyboard (varies by keyboard)        |
-| `oem_open_brackets`   | The `[`/`{` key on a US standard keyboard (varies by keyboard)            |
-| `oem_pipe`            | The `\`/`\|` key on a US standard keyboard (varies by keyboard)           |
-| `oem_close_brackets`  | The `]`/`}` key on a US standard keyboard (varies by keyboard)            |
-| `oem_quotes`          | The `'`/`"` key on a US standard keyboard (varies by keyboard)            |
-| `oem_8`               | The `` ` ``/`¬` key on a UK keyboard (varies by keyboard)                 |
-| `oem_102`             | The `\`/`\|` key next to left Shift on ISO keyboards (varies by keyboard) |
-| `oem_plus`            | The `=`/`+` key on a US standard keyboard (varies by keyboard)            |
-| `oem_comma`           | The `,`/`<` key on a US standard keyboard (varies by keyboard)            |
-| `oem_minus`           | The `-`/`_` key on a US standard keyboard (varies by keyboard)            |
-| `oem_period`          | The `.`/`>` key on a US standard keyboard (varies by keyboard)            |
-| `muhenkan`            | The 無変換 (non-convert) key for Japanese keyboard layouts                |
-| `henkan`              | The 変換 (convert) key for Japanese keyboard layouts                      |
+| `oem_semicolon`       | The `;`/`:` key (US layout)                                              |
+| `oem_question`        | The `/`/`?` key (US layout)                                              |
+| `oem_tilde`           | The `` ` ``/`~` key (US layout)                                          |
+| `oem_open_brackets`   | The `[`/`{` key (US layout)                                              |
+| `oem_pipe`            | The `\`/`\|` key (US layout)                                             |
+| `oem_close_brackets`  | The `]`/`}` key (US layout)                                              |
+| `oem_quotes`          | The `'`/`"` key (US layout)                                              |
+| `oem_plus`            | The `=`/`+` key (US layout)                                              |
+| `oem_comma`           | The `,`/`<` key (US layout)                                              |
+| `oem_minus`           | The `-`/`_` key (US layout)                                              |
+| `oem_period`          | The `.`/`>` key (US layout)                                              |
 
 </details>
 
-If a key is not in the list above, it is likely still supported if you use its character in a keybinding (e.g. `alt+å` for the Norwegian Å character).
+If a key is not listed above, it's likely still supported if you use its character directly (e.g. `alt+å`).
 
-> German and US international keyboards treat the right-side alt key differently. For these keyboard layouts, use `ralt+ctrl` instead of `ralt` to bind the right-side alt key.
+> German and US international keyboards treat the right-side alt key differently. For these layouts, use `ralt+ctrl` instead of `ralt`.
 
-### Config: Gaps
-
-The gaps between windows can be changed via the `gaps` property in the config file. Inner and outer gaps are set separately.
+### Gaps
 
 ```yaml
 gaps:
@@ -234,111 +200,71 @@ gaps:
     left: "20px"
 ```
 
-### Config: Workspaces
-
-Workspaces need to be predefined via the `workspaces` property in the config file. A workspace is automatically assigned to each monitor on startup.
+### Workspaces
 
 ```yaml
 workspaces:
-  # This is the unique ID for the workspace. It's used in keybinding
-  # commands, and is also the label shown in 3rd-party apps (e.g. Zebar) if
-  # `display_name` is not provided.
   - name: "1"
-
-    # Optional override for the workspace label used in 3rd-party apps.
-    # Does not need to be unique.
     display_name: "Work"
-
-    # Optionally force the workspace on a specific monitor if it exists.
-    # 0 is your leftmost screen, 1 is the next one to the right, and so on.
     bind_to_monitor: 0
-
-    # Optionally prevent workspace from being deactivated when empty.
     keep_alive: false
 ```
 
-### Config: Window rules
+### Window rules
 
-Commands can be run when a window is first launched. This is useful for adding window-specific behaviors like always starting a window as fullscreen or assigning to a specific workspace.
-
-Windows can be targeted by their process, class, and title. Multiple matching criteria can be used together to target a window more precisely.
+Commands can be run when a window is first launched — useful for always floating certain apps or assigning them to specific workspaces.
 
 ```yaml
 window_rules:
   - commands: ["move --workspace 1"]
     match:
-      # Move browsers to workspace 1.
       - window_process: { regex: "msedge|brave|chrome" }
 
   - commands: ["ignore"]
     match:
-      # Ignores any Zebar windows.
       - window_process: { equals: "zebar" }
 
-      # Ignores picture-in-picture windows for browsers.
-      # Note that *both* the title and class must match for the rule to run.
       - window_title: { regex: "[Pp]icture.in.[Pp]icture" }
         window_class: { regex: "Chrome_WidgetWin_1|MozillaDialogClass" }
 ```
 
-### Config: Window effects
-
-Visual effects can be applied to windows via the `window_effects` option. Currently, colored borders are the only effect available with more to come in the future.
-
-> Note: Window effects are exclusive to Windows 11.
+### Window effects
 
 ```yaml
 window_effects:
-  # Visual effects to apply to the focused window.
   focused_window:
-    # Highlight the window with a colored border.
     border:
       enabled: true
       color: "#0000ff"
 
-  # Visual effects to apply to non-focused windows.
   other_windows:
     border:
       enabled: false
       color: "#d3d3d3"
 ```
 
-### Config: Window behavior
-
-The `window_behavior` config option exists to customize the states that a window can be in (`tiling`, `floating`, `minimized`, and `fullscreen`).
+### Window behavior
 
 ```yaml
 window_behavior:
-  # New windows are created in this state whenever possible.
   # Allowed values: 'tiling', 'floating'.
   initial_state: "tiling"
 
-  # Sets the default options for when a new window is created. This also
-  # changes the defaults for when the state change commands, like
-  # `set-floating`, are used without any flags.
   state_defaults:
     floating:
-      # Whether to center floating windows by default.
       centered: true
-
-      # Whether to show floating windows as always on top.
       shown_on_top: false
 
     fullscreen:
-      # Maximize the window if possible. If the window doesn't have a
-      # maximize button, then it'll be made fullscreen normally instead.
       maximized: false
 ```
 
-### Config: Binding modes
+### Binding modes
 
-Binding modes are used to modify keybindings while Vypr is running.
-
-A binding mode can be enabled with `wm-enable-binding-mode --name <NAME>` and disabled with `wm-disable-binding-mode --name <NAME>`.
+Binding modes modify keybindings while Vypr is running. Enable with `wm-enable-binding-mode --name <NAME>`, disable with `wm-disable-binding-mode --name <NAME>`.
 
 ```yaml
 binding_modes:
-  # When enabled, the focused window can be resized via arrow keys or HJKL.
   - name: "resize"
     keybindings:
       - commands: ["resize --width -2%"]
@@ -349,26 +275,23 @@ binding_modes:
         bindings: ["k", "up"]
       - commands: ["resize --height -2%"]
         bindings: ["j", "down"]
-      # Press enter/escape to return to default keybindings.
       - commands: ["wm-disable-binding-mode --name resize"]
         bindings: ["escape", "enter"]
 ```
 
 ## FAQ
 
-**Q: How do I run Vypr on startup?**
+**How do I run Vypr on startup?**
 
 Right-click the Vypr icon in the system tray and select "Run on system startup".
 
-**Q: How can I create `<insert layout>`?**
+**How can I create a custom layout?**
 
-You can create custom layouts by changing the tiling direction with `alt+v`. This changes where the next window is placed _in relation to the current window_. If the current window's direction is horizontal, the new window will be placed to the right of it. If it is vertical, it will be placed below it. This also applies when moving windows; the tiling direction of the stationary window will affect where the moved window will be placed.
+Change the tiling direction with `alt+v`. This controls where the next window is placed relative to the current one — horizontal places it to the right, vertical places it below. Vypr also supports automatic dwindle tiling out of the box.
 
-Community-made scripts like [Dutch-Raptor/GAT-GWM](https://github.com/Dutch-Raptor/GAT-GWM) and [burgr033/Vypr-autotiling-python](https://github.com/burgr033/Vypr-autotiling-python) can be used to automatically change the tiling direction. Native support for automatic layouts isn't _currently_ supported.
+**How do I create a rule for a specific app?**
 
-**Q: How do I create a rule for `<insert application>`?**
-
-To match a specific application, you need a command to execute and either the window's process name, title, or class name. For example, if you use Flow-Launcher and want to make the settings window float, you can do the following:
+You'll need the window's process name, title, or class name. Tools like Winlister or AutoHotkey's Window Spy can help. Example:
 
 ```yaml
 window_rules:
@@ -378,16 +301,16 @@ window_rules:
         window_title: { equals: "Settings" }
 ```
 
-Programs like Winlister or AutoHotkey's Window Spy can be useful for getting info about a window.
+**Can I disable keybindings for a specific app?**
 
-**Q: How can I ignore Vypr's keybindings when `<insert application>` is focused?**
+Not yet. The default keybinding `alt+shift+p` toggles all keybindings on/off as a workaround.
 
-This isn't currently supported, however, the keybinding `alt+shift+p` in the default config is used to disable all other keybindings until `alt+shift+p` is pressed again.
+## Acknowledgements
 
-[discord-badge]: https://img.shields.io/discord/1041662798196908052.svg?logo=discord&colorB=7289DA
-[discord-link]: https://discord.gg/ud6z3qjRvM
-[downloads-badge]: https://img.shields.io/github/downloads/OWNER/vypr/total?logo=github&logoColor=white
-[downloads-link]: https://github.com/OWNER/vypr/releases
-[issues-badge]: https://img.shields.io/badge/good_first_issues-7057ff
-[issues-link]: https://github.com/OWNER/vypr/issues
+Vypr is a fork of [GlazeWM](https://github.com/glzr-io/glazewm) by [glzr-io](https://github.com/glzr-io). Huge thanks to the GlazeWM team for building the foundation that makes this project possible.
+
+## License
+
+Vypr is licensed under the [GPLv3 license](LICENSE.md).
+
 [demo-video]: resources/assets/demo.webp
