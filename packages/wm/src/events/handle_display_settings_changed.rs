@@ -28,7 +28,16 @@ pub fn handle_display_settings_changed(
       displays
         .into_iter()
         .map(|display| {
-          let properties = NativeMonitorProperties::try_from(&display)?;
+          let mut properties =
+            NativeMonitorProperties::try_from(&display)?;
+
+          // When the taskbar is hidden, Windows still reserves screen
+          // space for it in the working area. Override with full bounds
+          // so windows reclaim the entire screen.
+          if config.value.general.hide_taskbar {
+            properties.working_area = properties.bounds.clone();
+          }
+
           Ok((display, properties))
         })
         .try_collect::<Vec<_>>()

@@ -118,9 +118,16 @@ impl WmState {
     // Create a monitor, and consequently a workspace, for each detected
     // native monitor.
     for native_display in self.dispatcher.sorted_displays()? {
-      if let Ok(native_properties) =
+      if let Ok(mut native_properties) =
         NativeMonitorProperties::try_from(&native_display)
       {
+        // When the taskbar is hidden, Windows still reserves screen
+        // space for it in the working area. Override with full bounds
+        // so windows reclaim the entire screen.
+        if config.value.general.hide_taskbar {
+          native_properties.working_area = native_properties.bounds.clone();
+        }
+
         let monitor =
           add_monitor(native_display, native_properties, self)?;
         move_bounded_workspaces_to_new_monitor(&monitor, self, config)?;
@@ -680,6 +687,14 @@ impl WmState {
       unmanage_window(window, self)?;
     }
 
+    // Remove border overlays whose target windows no longer exist
+    // (e.g. transient dialogs or installer windows that closed
+    // without going through the normal unmanage path).
+    #[cfg(target_os = "windows")]
+    self
+      .border_overlay_manager
+      .cleanup_orphaned(&self.dispatcher);
+
     Ok(())
   }
 }
@@ -711,5 +726,9 @@ impl Drop for WmState {
           .set_transparency(&OpacityValue::from_alpha(u8::MAX));
       }
     }
+
+    // Destroy all remaining border overlays on shutdown.
+    #[cfg(target_os = "windows")]
+    self.border_overlay_manager.destroy_all(&self.dispatcher);
   }
 }

@@ -10,11 +10,11 @@ use windows::Win32::Graphics::Gdi::{
   BI_RGB, BLENDFUNCTION, DIB_RGB_COLORS,
 };
 use windows::Win32::UI::WindowsAndMessaging::{
-  CreateWindowExW, DefWindowProcW, DestroyWindow, RegisterClassW,
-  SetWindowPos, ShowWindow, UpdateLayeredWindow, ULW_ALPHA, WNDCLASSW,
-  HWND_TOP, SWP_NOACTIVATE, SWP_NOSIZE, SWP_SHOWWINDOW, SW_HIDE,
-  SW_SHOWNOACTIVATE, WS_EX_LAYERED, WS_EX_NOACTIVATE, WS_EX_TOOLWINDOW,
-  WS_POPUP,
+  CreateWindowExW, DefWindowProcW, DestroyWindow, IsWindow,
+  RegisterClassW, SetWindowPos, ShowWindow, UpdateLayeredWindow,
+  ULW_ALPHA, WNDCLASSW, HWND_TOP, SWP_NOACTIVATE, SWP_NOSIZE,
+  SWP_SHOWWINDOW, SW_HIDE, SW_SHOWNOACTIVATE, WS_EX_LAYERED,
+  WS_EX_NOACTIVATE, WS_EX_TOOLWINDOW, WS_POPUP,
 };
 
 use crate::{Color, Dispatcher, Rect};
@@ -240,6 +240,28 @@ impl BorderOverlayManager {
   /// Returns true if an overlay exists for the given target.
   pub fn has_overlay(&self, target_handle: isize) -> bool {
     self.overlays.contains_key(&target_handle)
+  }
+
+  /// Destroys overlays whose target windows no longer exist.
+  ///
+  /// Catches stray borders from windows that close without going
+  /// through the normal unmanage path (e.g. transient dialogs,
+  /// installer windows).
+  pub fn cleanup_orphaned(&mut self, dispatcher: &Dispatcher) {
+    let orphaned: Vec<isize> = self
+      .overlays
+      .keys()
+      .copied()
+      .filter(|&handle| {
+        // SAFETY: Checking if the target window handle is still valid.
+        !unsafe { IsWindow(HWND(handle)) }.as_bool()
+      })
+      .collect();
+
+    for handle in orphaned {
+      tracing::debug!("Removing orphaned border overlay for {handle}.");
+      self.destroy(handle, dispatcher);
+    }
   }
 }
 
